@@ -1,0 +1,6 @@
+# Dependency Directories
+node_modules/
+#My Actual Images
+media/*
+#My media json
+json/*

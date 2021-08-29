@@ -1,0 +1,22 @@
+{
+  "name": "lomiarch-next-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "logic.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node logic.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "byte-size": "^8.1.0",
+    "crypto-js": "^4.1.1",
+    "dayjs": "^1.10.6",
+    "express": "^4.17.1",
+    "image-size": "^1.0.0",
+    "piexifjs": "^1.0.6",
+    "redis": "^3.1.2",
+    "uuid": "^8.3.2"
+  }
+}
