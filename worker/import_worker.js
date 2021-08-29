@@ -64,7 +64,10 @@ async function check_content(rootPath, writePath, relativePath) {
 
 
           } else if (file.isFile()) {
-            console.log("Content is not supported in the Top Level Directory and will be ignored...");
+            if (file.name != '.gitignore') {
+              // Ensure the needed .gitignore does not trigger this warning 
+              console.log("Content is not supported in the Top Level Directory and will be ignored...");
+            }
           }
         });
       }
