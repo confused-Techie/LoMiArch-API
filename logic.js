@@ -1,22 +1,47 @@
 var express = require("express");
 var app = express();
 const path = require('path');
-var redis = require('redis');
 
 const import_worker = require("./worker/import_worker");
 
-// Define the listen event handler
-app.listen(5000, () => {
-  console.log("API Server running on port 5000");
+// Define data to replac with imported data.
+var media;
+
+var a = require('./worker/test');
+console.log(a.getValue());
+a.setValue("Hello World");
+a.on('ready', function() {
+  console.log(a.getValue());
 });
 
-// Allowing for a graceful shutdown. Where it stops accepting requests.
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP Server Closed');
+var dbimport = require('./worker/dbimport_worker');
+dbimport.setPath(path.join(__dirname, "./json"));
+dbimport.on('ready', function() {
+  //console.log(dbimport.getMedia());
+
+  console.log('Assigning Imported Data...');
+  media = dbimport.getMedia();
+
+  // With the imported data ready, we can start the server
+  const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
+
+  // Allow a graceful shutdown of the server.
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP Server');
+    server.close(() => {
+      console.log('HTTP Server closed');
+    });
   });
+
+  process.on('SIGINT', () => {
+    console.log('SIGINT signal received: Closing HTTP Server');
+    server.close(() => {
+      console.log('HTTP Server Closed');
+    });
+  });
+
 });
+
 
 // Define the error handler
 function error(status, msg) {
@@ -235,7 +260,7 @@ app.get("/import", (req, res, next) => {
 
 
 // this will be my faux redis database
-var media = [
+var media_old = [
   { uuid: 1, pod_loc: "/media/my_library/hot.jpg", time_taken: 1627431060, date_taken: "Wednesday, July 28, 2021 12:11:00 AM", gallery: [ 'default'], tag: [ ], album: [ 'a2' ], type: 'image' },
   { uuid: 2, pod_loc: "/media/my_library/dog.jpg", time_taken: 1627344660, date_taken: "Tuesday, July 27, 2021 12:11:00 AM", gallery: [ 'default', 'favourite' ], tag: [ 'animals' ], album: [ 'a1' ], type: 'image' },
   { uuid: 3, pod_loc: "/media/my_library/server.jpg", time_taken: 1626739860, date_taken: "Tuesday, July 20, 2021 12:11:00 AM", gallery: [ 'default' ], tag: [ 'tech' ], album: [ 'a2' ], type: 'image' },
