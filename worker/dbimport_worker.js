@@ -15,7 +15,11 @@ a.on('ready', function() {
 var EventEmitter = require('events').EventEmitter;
 
 var media = [];
-var uuid, gallery, tag, album;
+var uuid = [];
+var gallery = [];
+var tag = [];
+var album = [];
+
 var pathToRead;
 
 module.exports = new EventEmitter();
@@ -51,7 +55,7 @@ module.exports.setPath = function(givenPath) {
   // The setPath must be called before this can even be expected to be ready.
   pathToRead = givenPath;
 
-  // Due to no easy way to check when this variable has been set, we will call the main code here.
+  console.log('Beginning Saved Data Import...');
   mediaImport();
 }
 
@@ -64,40 +68,148 @@ function mediaImport() {
   try {
 
     var itemsProcessed = 0;
-    fs.readdir(pathToRead, {withFileTypes: true}, (err, content) => {
+    var totalItems = 0;
 
+    var galDone = false;
+    var uuidDone = false;
+
+    fs.readdir(pathToRead, {withFileTypes: true}, (err, content) => {
       if (err) {
         console.log(`ERROR Occured Reading Import Media: ${err}`);
-      }
+      } else {
 
-      content.forEach(file => {
-        if (file.isFile()) {
-          // We only want to pay attention to files within the json dir
-          if (file.name != '.gitignore') {
+        // Assign Content
+        if (totalItems == 0) {
+          totalItems = content.length;
+        }
 
-            let rawdata = fs.readFileSync(pathToRead+'/'+file.name);
-            let jsondata = JSON.parse(rawdata);
-            media.push(jsondata);
-            itemsProcessed++;
+        content.forEach(file => {
 
-            if (itemsProcessed === content.length) {
-              // All items should be processed.
-              // And we can emit a ready event
+          if (file.isFile()) {
+            // We only want to pay attentino to files within the json dir
 
-              const durationInMilliseconds = getDurationInMilliseconds(start);
-              console.log(`[FINISHED] Media Import: ${durationInMilliseconds} ms`);
-              module.exports.emit('ready');
+            if (file.name == 'tags.json') {
+
+              const tagStart = process.hrtime();
+
+              let rawdata = fs.readFileSync(pathToRead+'/'+file.name);
+              let jsondata = JSON.parse(rawdata);
+              tag = jsondata;
+
+              itemsProcessed++;
+
+              const durationInMilliseconds = getDurationInMilliseconds(tagStart);
+              console.log(`[FINISHED] Tag Import: ${durationInMilliseconds} ms`);
+
+            } else if (file.name == 'albums.json') {
+
+              const albumStart = process.hrtime();
+
+              let rawdata = fs.readFileSync(pathToRead+'/'+file.name);
+              let jsondata = JSON.parse(rawdata);
+              album = jsondata;
+
+              itemsProcessed++;
+
+              const durationInMilliseconds = getDurationInMilliseconds(albumStart);
+              console.log(`[FINISHED] Album Import: ${durationInMilliseconds} ms`);
+
+            } else if (file.name == '.gitignore') {
+              console.log('Ignoring gitignore...');
+
+              itemsProcessed++;
+            } else {
+              // Now to process the regular JSON data
+              try {
+
+                let rawdata = fs.readFileSync(pathToRead+'/'+file.name);
+                let jsondata = JSON.parse(rawdata);
+                media.push(jsondata);
+
+                itemsProcessed++;
+
+              } catch(ex) {
+                console.log(`Error Occured on JSON Data Import: ${ex}`);
+              }
             }
-          } else {
-            // We still need to account for these for itemsProcessed to work as a finished counter.
-            itemsProcessed++;
+          } // ELSE DIR
+
+          // Check this data within the loop
+
+          if (itemsProcessed == totalItems && totalItems != 0) {
+          // All Items should be processed.
+          // And we can build the dependent items.
+          // Logging that the original import is done.
+
+          const durationInMillisecondsJSON = getDurationInMilliseconds(start);
+          console.log(`[FINISHED] Media Import: ${durationInMillisecondsJSON} ms`);
+
+          try {
+            // UUID Import
+            const startUUID = process.hrtime();
+            var uuidProcessed = 0;
+
+            const startGal = process.hrtime();
+            var galCollection = [];
+
+            media.forEach((data, index) => {
+              uuid.push(media[index].uuid);
+              uuidProcessed++;
+
+              galCollection.push(media[index].gallery);
+
+              if (media.length == uuidProcessed && uuidDone == false) {
+                const durationInMillisecondsUUID = getDurationInMilliseconds(startUUID);
+                console.log(`[FINISHED] UUID Import: ${durationInMillisecondsUUID} ms`);
+
+                uuidDone = true;
+              }
+
+              if (media.length == galCollection.length && galDone == false) {
+                galCollection.forEach((galData, galIndex) => {
+                  // If one item belongs to multiple galleries, we need to desend into that gallery, and check each item.
+                  if (galCollection[galIndex].length > 1) {
+                    galCollection[galIndex].forEach((galDataTwo, galIndexTwo) => {
+
+                      if (gallery.indexOf( galCollection[galIndex][galIndexTwo] ) == -1) {
+                        // Since this item is nnot in the gallery, add it.
+                        gallery.push( galCollection[galIndex][galIndexTwo] );
+                      }
+                    });
+                  } else {
+
+                    if (gallery.indexOf( galCollection[galIndex][0] ) == -1) {
+                      // Since this item is not in the gallery, add it.
+                      gallery.push( galCollection[galIndex][0] );
+                    }
+                  }
+                });
+
+                // At this point the galleries should be done being imported
+                const durationInMillisecondsGAL = getDurationInMilliseconds(startGal);
+                console.log(`[FINISHED] Gallery Import: ${durationInMillisecondsGAL} ms`);
+                galDone = true;
+              }
+            });
+          } catch(ex) {
+            console.log(`SEVERE ERROR: ${ex}`);
           }
-        } // else dir and we can ignroe
-      });
+        }
+
+        // Check for the dependent items being done to complete the import
+        if (galDone && uuidDone) {
+          const durationInMillisecondsTOTAL = getDurationInMilliseconds(start);
+          console.log(`[FINISHED] Total Import: ${durationInMillisecondsTOTAL} ms`);
+          module.exports.emit('ready');
+        }
+        });
+
+      }
     });
   } catch(ex) {
-    console.log(`ERROR Occured During Media Import: ${ex}`);
+    console.log(`SEVERE ERROR: ${ex}`);
   }
+
 }
 
 const getDurationInMilliseconds = (start) => {

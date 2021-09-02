@@ -5,25 +5,27 @@ const path = require('path');
 const import_worker = require("./worker/import_worker");
 
 // Define data to replac with imported data.
-var media;
-
-var a = require('./worker/test');
-console.log(a.getValue());
-a.setValue("Hello World");
-a.on('ready', function() {
-  console.log(a.getValue());
-});
+var media, gallery, uuid, tag, album;
 
 var dbimport = require('./worker/dbimport_worker');
 dbimport.setPath(path.join(__dirname, "./json"));
 dbimport.on('ready', function() {
-  //console.log(dbimport.getMedia());
 
   console.log('Assigning Imported Data...');
   media = dbimport.getMedia();
+  gallery = dbimport.getGallery();
+  uuid = dbimport.getUUID();
+  tag = dbimport.getTag();
+  album = dbimport.getAlbum();
 
   // With the imported data ready, we can start the server
   const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
+
+  //console.log(tag);
+  //console.log(album);
+  //console.log(uuid);
+  //console.log(gallery);
+  //console.log(media);
 
   // Allow a graceful shutdown of the server.
   process.on('SIGTERM', () => {
@@ -40,6 +42,10 @@ dbimport.on('ready', function() {
     });
   });
 
+});
+
+dbimport.on('error', function(data) {
+  console.log(data);
 });
 
 
@@ -289,15 +295,15 @@ var media_old = [
   { uuid: 26, pod_loc: "/media/my_library/yum.jpg", time_taken: 1625338140, date_taken: "Saturday, July 3, 2021 6:49:00 PM", gallery: [ 'default'], tag: [ 'food' ], album: [ 'a1' ], type: 'image' }
 ];
 
-var uuid = [
+var uuid_old = [
   '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26'
 ];
 
-var gallery = [
+var gallery_old = [
   'default', 'favourite'
 ];
 
-var tag = [
+var tag_old = [
   [ 'animals', '#9c23e8' ],
   [ 'tech', '#b00406' ],
   [ 'art', '#30fce8' ],
@@ -306,7 +312,7 @@ var tag = [
   [ 'food', '#f78f2d' ]
 ];
 
-var album = [
+var album_old = [
   { uuid: 'a1', name: "Angie's Photos", preview: '/media/2', access: [ 'andy' ] },
   { uuid: 'a2', name: "Andy's Photos", preview: '/media/4', access: [ 'andy' ] }
 ];
