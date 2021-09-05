@@ -115,7 +115,7 @@ function mediaImport() {
               console.log(`[FINISHED] Album Import: ${durationInMilliseconds} ms`);
 
             } else if (file.name == '.gitignore') {
-              console.log('Ignoring gitignore...');
+              console.log('Ignoring gitignore in Database Import Worker...');
 
               itemsProcessed++;
             } else {

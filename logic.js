@@ -6,8 +6,11 @@ const import_worker = require("./worker/import_worker");
 
 // Define data to replac with imported data.
 var media, gallery, uuid, tag, album;
+var notifyReady = false;
 
+var notification = require('./worker/notification_worker');
 var dbimport = require('./worker/dbimport_worker');
+
 dbimport.setPath(path.join(__dirname, "./json"));
 dbimport.on('ready', function() {
 
@@ -46,6 +49,12 @@ dbimport.on('ready', function() {
 
 dbimport.on('error', function(data) {
   console.log(data);
+});
+
+notification.initNotification();
+
+notification.on('ready', function() {
+  notifyReady = true;
 });
 
 
@@ -183,6 +192,8 @@ app.get("/gallery/:type?", (req, res, next) => {
       }
     });
 
+    // TODO: Add support for different Galleries
+
     if (galReq == 'default') {
       if (!~gallery.indexOf(type)) return errorV2(req, res, 406, 'Invalid Gallery Type');
     }
@@ -262,6 +273,10 @@ app.get("/media/:id?", (req, res, next) => {
 app.get("/import", (req, res, next) => {
   console.log(import_worker.importWorker(path));
   res.sendStatus(200);
+});
+
+app.get("/notifications", (req, res, next) => {
+
 });
 
 
