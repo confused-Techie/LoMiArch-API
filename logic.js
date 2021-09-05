@@ -54,6 +54,7 @@ dbimport.on('error', function(data) {
 notification.initNotification();
 
 notification.on('ready', function() {
+  console.log('test');
   notifyReady = true;
 });
 
@@ -276,7 +277,12 @@ app.get("/import", (req, res, next) => {
 });
 
 app.get("/notifications", (req, res, next) => {
+  //notification.updateNotification();
+  //notification.getNotification('id');
 
+  var validate = require('./worker/validation_worker');
+  validate.validate(media, notification, path);
+  res.sendStatus(200);
 });
 
 

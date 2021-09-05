@@ -27,23 +27,34 @@ module.exports.getNotifications = function() {
 }
 
 module.exports.getNotification = function(id) {
-  if (notifyImport) {
-    if (notificationdb.length == 0) {
-      const start = process.hrtime();
+  if (id != '') {
+    if (notifyImport) {
+      if (notificationdb.length != 0) {
+        const start = process.hrtime();
 
-      notificationdb.forEach((data, index) => {
-        if (id == notificationdb[index].uuid) {
-          return notificationdb[index];
-        }
-      });
+        notificationdb.forEach((data, index) => {
+          if (id == notificationdb[index].uuid) {
+            const durationInMilliseconds = getDurationInMilliseconds(start);
+            console.log(`[FINISHED] Retreiving Notification: ${durationInMilliseconds} ms`);
+            return notificationdb[index];
+          } else {
+            console.log('Notification could not be found in Notification Database...');
+            return 'ERROR';
+          }
+        });
+      } else {
+        console.log('No Saved Notifications, Returning Error status for getNotification...');
+        return 'ERROR';
+      }
     } else {
-      console.log('No Saved Notifications, Returning Error status for getNotification...');
+      console.log('Notifications have not been successfully imported!');
+      console.log('Attempting to Import Notifications...');
+      notificationImport();
       return 'ERROR';
     }
   } else {
-    console.log('Notifications have not been successfully imported!');
-    console.log('Attempting to Import Notifications...');
-    notificationImport();
+    console.log('Notification ID Must be specified to return a value!');
+    console.log(id);
     return 'ERROR';
   }
 }
@@ -55,7 +66,7 @@ module.exports.deleteNotification = function(id) {
 module.exports.updateNotification = function() {
   // This will be simply to check for low priority notifications to clear properly.
   if (notifyImport) {
-    if (notificationdb.length == 0) {
+    if (notificationdb.length != 0) {
 
       const start = process.hrtime();
 
@@ -68,6 +79,11 @@ module.exports.updateNotification = function() {
             console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
             deleteNotification(notificationdb[index].uuid);
           }
+        }
+
+        if (notificationdb.length == index-1) {
+          const durationInMilliseconds = getDurationInMilliseconds(start);
+          console.log(`[FINISHED] Notification Pruning: ${durationInMilliseconds} ms`);
         }
       });
     } else {
@@ -177,7 +193,7 @@ function saveNotification() {
 
 function deleteNotification(id) {
   if (notifyImport) {
-    if (notificationdb.length == 0) {
+    if (notificationdb.length != 0) {
       const start = process.hrtime();
 
       notificationdb.forEach((data, index) => {
@@ -189,6 +205,8 @@ function deleteNotification(id) {
           console.log(`Removed below notification in ${durationInMilliseconds} ms`);
           console.log(removedItem);
           saveNotification();
+        } else {
+          console.log(`Couldn't find Notification ${id} to Delete...`);
         }
       });
     } else {
@@ -209,7 +227,7 @@ const getDurationInMilliseconds = (start) => {
   return (diff[0] * NS_PER_SEC + diff[1]) / NS_TO_MS;
 }
 
-function uuidGenrate() {
+function uuidGenerate() {
   const { v4: uuidv4 } = require('uuid');
 
   try {
