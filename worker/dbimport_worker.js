@@ -56,15 +56,15 @@ module.exports.setPath = function(givenPath) {
   pathToRead = givenPath;
 
   console.log('Beginning Saved Data Import...');
-  mediaImport();
+  mediaImport('init');
 }
 
 module.exports.refreshMedia = function() {
   console.log('Refreshing Saved media...');
-  mediaImport();
+  mediaImport('refresh');
 }
 
-function mediaImport() {
+function mediaImport(mode) {
 
   const start = process.hrtime();
 
@@ -98,8 +98,13 @@ function mediaImport() {
               const tagStart = process.hrtime();
 
               let rawdata = fs.readFileSync(pathToRead+'/'+file.name);
-              let jsondata = JSON.parse(rawdata);
-              tag = jsondata;
+
+              if (rawdata != '') {
+                let jsondata = JSON.parse(rawdata);
+                tag = jsondata;
+              }
+              //let jsondata = JSON.parse(rawdata);
+              //tag = jsondata;
 
               itemsProcessed++;
 
@@ -111,8 +116,13 @@ function mediaImport() {
               const albumStart = process.hrtime();
 
               let rawdata = fs.readFileSync(pathToRead+'/'+file.name);
-              let jsondata = JSON.parse(rawdata);
-              album = jsondata;
+
+              if (rawdata != '') {
+                let jsondata = JSON.parse(rawdata);
+                album = jsondata;
+              }
+              //let jsondata = JSON.parse(rawdata);
+              //album = jsondata;
 
               itemsProcessed++;
 
@@ -157,6 +167,7 @@ function mediaImport() {
             const startGal = process.hrtime();
             var galCollection = [];
 
+            if (media != '') {
             media.forEach((data, index) => {
               uuid.push(media[index].uuid);
               uuidProcessed++;
@@ -196,6 +207,11 @@ function mediaImport() {
                 galDone = true;
               }
             });
+          } else {
+            // This would trigger when media is empty, and has no value
+            uuidDone = true;
+            galDone = true;
+          }
           } catch(ex) {
             console.log(`SEVERE ERROR: ${ex}`);
           }
@@ -205,7 +221,13 @@ function mediaImport() {
         if (galDone && uuidDone) {
           const durationInMillisecondsTOTAL = getDurationInMilliseconds(start);
           console.log(`[FINISHED] Total Import: ${durationInMillisecondsTOTAL} ms`);
-          module.exports.emit('ready');
+
+          if (mode == 'init') {
+            module.exports.emit('ready');
+          } else if (mode == 'refresh') {
+            module.exports.emit('refresh');
+          }
+          //module.exports.emit('ready');
         }
         });
 

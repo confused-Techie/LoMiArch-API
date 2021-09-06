@@ -7,7 +7,6 @@ const import_worker = require("./worker/import_worker");
 // Define data to replac with imported data.
 var media, gallery, uuid, tag, album;
 var notifyReady = false;
-var serverStarted = false;
 
 var notification = require('./worker/notification_worker');
 var dbimport = require('./worker/dbimport_worker');
@@ -23,13 +22,8 @@ dbimport.on('ready', function() {
   album = dbimport.getAlbum();
 
   // With the imported data ready, we can start the server
-  // But only start if not already started
-  var server;
-  if (!serverStarted) {
-    server = app.listen(5000, () => console.log('API Server Running on port 5000...'));
-    serverStarted = true;
-  }
-  //const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
+
+  const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
 
   //console.log(tag);
   //console.log(album);
@@ -52,6 +46,15 @@ dbimport.on('ready', function() {
     });
   });
 
+});
+
+dbimport.on('refresh', function() {
+  console.log('Assigning Refreshed Imported Data...');
+  media = dbimport.getMedia();
+  gallery = dbimport.getGallery();
+  uuid = dbimport.getUUID();
+  tag = dbimport.getTag();
+  album = dbimport.getAlbum();
 });
 
 dbimport.on('error', function(data) {
@@ -277,6 +280,19 @@ app.get("/media/:id?", (req, res, next) => {
 
 });
 
+app.delete("/media/:id?", (req, res, next) => {
+  var id = req.params.id;
+
+  if (!id) retrun errorV2(req, res, 400, 'Media ID Required');
+  if (!~uuid.indexOf(id)) return errorV2(req, res, 406, 'Invalid Media Request');
+
+  try {
+    // Delete media through the media handler worker 
+  } catch(ex) {
+    return errorV2(req, res, 500, ex);
+  }
+
+});
 
 app.get("/import", (req, res, next) => {
   //console.log(import_worker.importWorker(path), media);
@@ -284,10 +300,35 @@ app.get("/import", (req, res, next) => {
   res.sendStatus(200);
 });
 
-app.get("/notifications", (req, res, next) => {
-  //notification.updateNotification();
-  //notification.getNotification('id');
+app.get("/notifications/:id?", (req, res, next) => {
 
+  if (notifyReady) {
+    var id = req.params.id;
+    var tempNotif = notification.getNotifications();
+
+    if (!id) {
+      // With no notification ID Specified will return all
+      res.json(tempNotif);
+      console.log('Responding to Full Notification Request...');
+    } else {
+      var tempOneNotif = notification.getNotification(id);
+      if (tempOneNotif != 'ERROR') {
+        res.json(tempOneNotif);
+      } else {
+        return errorV2(req, res, 500, 'Error Occured Retreiving Notification');
+      }
+    }
+  } else {
+    // Notifications are not ready to be returned
+    return errorV2(req, res, 500, 'Notifications are not ready to be returned');
+  }
+});
+
+app.delete("/notifications/:id?", (req, res, next) => {
+  // delete notification for notification.deleteNotification(id)
+});
+
+app.get("/validate", (req, res, next) => {
   var validate = require('./worker/validation_worker');
   validate.validate(media, notification, path);
   res.sendStatus(200);
