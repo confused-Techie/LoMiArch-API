@@ -7,6 +7,7 @@ const import_worker = require("./worker/import_worker");
 // Define data to replac with imported data.
 var media, gallery, uuid, tag, album;
 var notifyReady = false;
+var serverStarted = false;
 
 var notification = require('./worker/notification_worker');
 var dbimport = require('./worker/dbimport_worker');
@@ -22,7 +23,13 @@ dbimport.on('ready', function() {
   album = dbimport.getAlbum();
 
   // With the imported data ready, we can start the server
-  const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
+  // But only start if not already started
+  var server;
+  if (!serverStarted) {
+    server = app.listen(5000, () => console.log('API Server Running on port 5000...'));
+    serverStarted = true;
+  }
+  //const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
 
   //console.log(tag);
   //console.log(album);
@@ -272,7 +279,8 @@ app.get("/media/:id?", (req, res, next) => {
 
 
 app.get("/import", (req, res, next) => {
-  console.log(import_worker.importWorker(path));
+  //console.log(import_worker.importWorker(path), media);
+  import_worker.importWorker(path, media);
   res.sendStatus(200);
 });
 

@@ -17,6 +17,7 @@ module.exports.validate = function(media, notify, pathToMedia) {
         } else {
           if (currentMD5 != media[index].md5) {
             console.log('Media Hashes do not match! Encountered Corrupt Media...');
+            itemsToCheck--;
             // TODO: Handle this with a media handler worker
             notify.newNotification('Corrupt Media Found!',
               `There was a corrupt media item discovered: ${media[index].pod_loc}. It has been temporarily removed.`, 1);

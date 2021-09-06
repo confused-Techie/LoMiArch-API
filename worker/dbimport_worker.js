@@ -59,6 +59,11 @@ module.exports.setPath = function(givenPath) {
   mediaImport();
 }
 
+module.exports.refreshMedia = function() {
+  console.log('Refreshing Saved media...');
+  mediaImport();
+}
+
 function mediaImport() {
 
   const start = process.hrtime();

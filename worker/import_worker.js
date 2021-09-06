@@ -1,12 +1,12 @@
 
 module.exports = {
-  importWorker: function (rootPath) {
-    check_content(rootPath.join(__dirname, "../media"), rootPath.join(__dirname, "../json"), '/media');
+  importWorker: function (rootPath, media) {
+    check_content(rootPath.join(__dirname, "../media"), rootPath.join(__dirname, "../json"), '/media', media);
     return "Starting Scan...";
   }
 };
 
-async function check_content(rootPath, writePath, relativePath) {
+async function check_content(rootPath, writePath, relativePath, media) {
 
   const start = process.hrtime();
 
@@ -15,8 +15,14 @@ async function check_content(rootPath, writePath, relativePath) {
 
   readPath = rootPath;
 
-  try {
+  // To provide the quickest method of checking weather media already exists, we can create an array of the
+  // Location of already known media
+  var knownMedia = [];
+  media.forEach((data, index) => {
+    knownMedia.push(media[index].pod_loc);
+  });
 
+  try {
     fs.readdir(readPath, {withFileTypes: true}, (err, content) => {
 
       if (err) {
@@ -28,44 +34,54 @@ async function check_content(rootPath, writePath, relativePath) {
         content.forEach(file => {
 
           if (file.isDirectory()) {
-            console.log(`Beginning Check on Library: ${file.name}`);
+            if (file.name != 'trash') {
+              if (file.name != 'purgatory') {
+                console.log(`Beginning Check on Library: ${file.name}`);
 
-            // Now to scan the next level down or the actual content of the library.
+                // Now to scan the next level down or the actual content of the library.
 
-            fs.readdir(readPath+'/'+file.name, {withFileTypes: true}, (ex, libContent) => {
+                fs.readdir(readPath+'/'+file.name, {withFileTypes: true}, (ex, libContent) => {
 
-              if (ex) {
-                console.log(ex);
-              } else {
+                  if (ex) {
+                    console.log(ex);
+                  } else {
+                    console.log()
+                    libContent.forEach(libFile => {
 
-                libContent.forEach(libFile => {
+                      if (libFile.isDirectory()) {
+                        // TODO: Build support for sub folder named albums
+                      } else if (libFile.isFile()) {
+                        if (knownMedia.indexOf(relativePath+'/'+file.name+'/'+libFile.name) == -1) {
+                          console.log(`Content Found within ${file.name}: ${libFile.name}`);
 
-                  if (libFile.isDirectory()) {
-                    // TODO: Build support for sub folder named albums
-                  } else if (libFile.isFile()) {
-
-                    console.log(`Content Found within ${file.name}: ${libFile.name}`);
-
-                    // Now to gather meta-data and enter this item into the db
-                    gatherMetaData(fs, readPath+"/"+file.name+"/"+libFile.name, libFile.name, writePath, relativePath+'/'+file.name+'/'+libFile.name)
-                      .then(res => {
-                        console.log(res);
-                        const durationInMilliseconds = getDurationInMilliseconds (start);
-                        console.log(`[FINISHED] Media Item: ${durationInMilliseconds} ms`);
-                      })
-                      .catch(err => {
-                        console.log(err);
-                      });
+                          // Now to gather meta-data and enter this item into the db
+                          gatherMetaData(fs, readPath+"/"+file.name+"/"+libFile.name, libFile.name, writePath, relativePath+'/'+file.name+'/'+libFile.name)
+                            .then(res => {
+                              console.log(res);
+                              const durationInMilliseconds = getDurationInMilliseconds (start);
+                              console.log(`[FINISHED] Media Item: ${durationInMilliseconds} ms`);
+                            })
+                            .catch(err => {
+                              console.log(err);
+                            });
+                        } else {
+                          console.log(`Skipping ${libFile.name} in ${file.name} since it already exists in the Media Library`);
+                        }
+                      }
+                    });
                   }
                 });
+
+              } else {
+                console.log('Ignoring Purgatory folder for Media Import...');
               }
-            });
-
-
+            } else {
+              console.log('Ignoring Trash folder for Media Import...');
+            }
 
           } else if (file.isFile()) {
             if (file.name != '.gitignore') {
-              // Ensure the needed .gitignore does not trigger this warning 
+              // Ensure the needed .gitignore does not trigger this warning
               console.log("Content is not supported in the Top Level Directory and will be ignored...");
             }
           }
