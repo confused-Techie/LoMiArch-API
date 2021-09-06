@@ -5,7 +5,8 @@
   "main": "logic.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node logic.js"
+    "dev": "node logic.js",
+    "prerun": "node ./scripts/prerun.js"
   },
   "author": "",
   "license": "ISC",
