@@ -1,3 +1,17 @@
+// dbimport_worker:
+// Will import all JSON data from the JSON folder at the root of the project.
+// Properly importing tags.json, albums.json and ignoring .gitignore
+// Once properly imported emits the ready or refresh event based on which type requested
+// Requires setPath to be called first to properly set the path that will be used.
+// setPath(path) triggers the media Import and expects a direct system path to the json folder
+// refreshMedia() triggers the Media Import as long as setPath has already been called
+// Once it emits ready or refresh subsequent calls can be made to all other functions to return the full value of
+// getMedia = media [ This is the full item, nothing needs to be done to return data ]
+// getUUID = full collection of all UUID's on the system as an array
+// getGallery = Again full collection as array
+// getTag = same as above
+// getAlbum = same as above 
+
 /*
 Example Usage of this item from logic.js
 
