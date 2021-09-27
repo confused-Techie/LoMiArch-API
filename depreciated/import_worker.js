@@ -1,4 +1,6 @@
 
+// WARNING: This worker has been depreciated and all functionality moved to import_worker.js : importMedia
+
 module.exports = {
   importWorker: function (rootPath, media) {
     check_content(rootPath.join(__dirname, "../media"), rootPath.join(__dirname, "../json"), '/media', media);

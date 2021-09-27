@@ -1,3 +1,12 @@
+// TODO:
+// BIG REWRITE
+// Due to issues with the current 'architecture' much of the application needs to be rewritten
+// Currently everything is working off a worker architecture
+// Unfortunately this causes several issues:
+// - Several dependencies and variables being passed to child workers with no regard for my sanity
+// - Rewritten code: For example reading and writing files, updating application global vairables
+// - Exponential complexity of workers calling other workers, workers being called by api calls
+
 var express = require("express");
 var app = express();
 const path = require('path');
@@ -287,7 +296,7 @@ app.delete("/media/:id?", (req, res, next) => {
   if (!~uuid.indexOf(id)) return errorV2(req, res, 406, 'Invalid Media Request');
 
   try {
-    // Delete media through the media handler worker 
+    // Delete media through the media handler worker
   } catch(ex) {
     return errorV2(req, res, 500, ex);
   }

@@ -1,3 +1,6 @@
+
+// WARNING: This worker has been depreciated and all functionality moved to jsonmedia_worker.js
+
 // dbimport_worker:
 // Will import all JSON data from the JSON folder at the root of the project.
 // Properly importing tags.json, albums.json and ignoring .gitignore
@@ -10,7 +13,7 @@
 // getUUID = full collection of all UUID's on the system as an array
 // getGallery = Again full collection as array
 // getTag = same as above
-// getAlbum = same as above 
+// getAlbum = same as above
 
 /*
 Example Usage of this item from logic.js

@@ -1,230 +1,251 @@
 
-// The following list of all functions
-// getNotifications: Returns ALL Notifications
-// getNotification(id): Returns specific notification from uuid
-// deleteNotification(id): Delete specific notification from uuid
-// updateNotification: Removes any low priority Notifications older than notifyExpiry
-// newNotification(title, message, priority): Creates notification with needed data.
-// initNotification: Imports the saved notifications from the save file
+// This is the reworked 'Modular Worker Architecture'
 
-const path = require('path');
-var EventEmitter = require('events').EventEmitter;
 var notificationdb = [];
 var notifyImport = false;
-var datapath = path.join(__dirname, "../settings");
-var notifyFile = '/notifications.json';
-var notifyExpiry = 6.048e8; // This default value is a full week.
 
-module.exports = new EventEmitter();
+// ERROR DECLARATIONS
+var notImportERROR = 'Notifications have not been initialized';
+var noSaveERROR = 'No Saved Notifications, Unable to search for specific one';
+var noIDERROR = 'Notification ID Must be specified to return a value';
 
 module.exports.getNotifications = function() {
-  if (notifyImport) {
-    return notificationdb;
-  } else {
-    console.log('Notifications have not been successfully imported!');
-    return 'ERROR';
-  }
+  return new Promise(function (resolve, reject) {
+    if (notifyImport) {
+      resolve(notificationdb);
+    } else {
+      reject(notImportERROR);
+    }
+  });
 }
 
 module.exports.getNotification = function(id) {
-  if (id != '') {
+  return new Promise(function (resolve, reject) {
+    if (notifyImport) {
+      if (id != '') {
+        if (notificationdb.length != 0) {
+          const start = process.hrtime();
+
+          notificationdb.forEach((data, index) => {
+            if (id == notificationdb[index].uuid) {
+              logTime(start, 'Notification', 'Retrival');
+              resolve(notificationdb[index]);
+            }
+
+            if (index == notificationdb.length -1) {
+              reject(`Notification ${id} could not be found in the Notification Database`);
+            }
+          });
+        } else {
+          reject(noSaveERROR);
+        }
+      } else {
+        reject(noIDERROR);
+      }
+    } else {
+      reject(notImportERROR);
+    }
+  });
+}
+
+module.exports.deleteNotification = function(id) {
+  return new Promise(function (resolve, reject) {
+    if (notifyImport) {
+      if (notificationdb.length != 0) {
+        if (id != '') {
+          const start = process.hrtime();
+
+          notificationdb.forEach((data, index) => {
+            if (id == notificationdb[index].uuid) {
+              let removedItem = notificationdb.splice(index, 1);
+              logTime(start, 'Notification', 'Removal');
+              console.log(removedItem);
+              this.saveNotification()
+                .then(res => {
+                  resolve('SUCCESS');
+                })
+                .catch(err => {
+                  reject(err);
+                });
+            }
+
+            if (index == notificationdb.length -1) {
+              reject(`Notification ${id} could not be found in the Notification Database`);
+            }
+          });
+        } else {
+          reject(noIDERROR);
+        }
+      } else {
+        reject(noSaveERROR);
+      }
+    } else {
+      reject(notImportERROR);
+    }
+  });
+}
+
+module.exports.updateNotification = function() {
+  return new Promise(function (resolve, reject) {
+    // This will simly be a check for low priority notifications to clear properly.
+
+    var notifyExpiry = 6.048e8; // This defualt value is a full week.
+
     if (notifyImport) {
       if (notificationdb.length != 0) {
         const start = process.hrtime();
 
         notificationdb.forEach((data, index) => {
-          if (id == notificationdb[index].uuid) {
-            const durationInMilliseconds = getDurationInMilliseconds(start);
-            console.log(`[FINISHED] Retreiving Notification: ${durationInMilliseconds} ms`);
-            return notificationdb[index];
-          } else {
-            console.log('Notification could not be found in Notification Database...');
-            return 'ERROR';
+          if (notificationdb[index].priority == 3) {
+            // Ensure that the priority is one that can be pruned
+            let currentTime = Date.now();
+            if (currentTime - notificationdb[index].birth > notifyExpiry) {
+              // If the difference between the current time and origin of the notifications are more than the expiry time
+              console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
+              this.deleteNotification(notificationdb[index].uuid)
+                .then(res => {
+                  logTime(start, `Notification '${notificationdb[index].title}'`, 'Pruning');
+                })
+                .catch(err => {
+                  reject(err);
+                });
+            } else {
+              console.log('Notify Expiry has not been reached. Leaving Notifications as is...');
+            }
+          }
+
+          if (index == notificationdb.length -1) {
+            logTime(start, 'Notification DB', 'Pruning');
+            this.saveNotification()
+              .then(res => {
+                resolve('SUCCESS');
+              })
+              .catch(err => {
+                reject(err);
+              });
           }
         });
       } else {
-        console.log('No Saved Notifications, Returning Error status for getNotification...');
-        return 'ERROR';
+        console.log('No saved Notifications to Update; Skipping...');
+        resolve('SUCCESS');
       }
     } else {
-      console.log('Notifications have not been successfully imported!');
-      console.log('Attempting to Import Notifications...');
-      notificationImport();
-      return 'ERROR';
+      reject(notImportERROR);
     }
-  } else {
-    console.log('Notification ID Must be specified to return a value!');
-    console.log(id);
-    return 'ERROR';
-  }
-}
-
-module.exports.deleteNotification = function(id) {
-  deleteNotification(id);
-}
-
-module.exports.updateNotification = function() {
-  // This will be simply to check for low priority notifications to clear properly.
-  if (notifyImport) {
-    if (notificationdb.length != 0) {
-
-      const start = process.hrtime();
-
-      notificationdb.forEach((data, index) => {
-        if (notificationdb[index].priority == 3) {
-          // Ensure that the priority is one that can be pruned
-          let currentTime = Date.now();
-          if (currentTime - notificationdb[index].birth > notifyExpiry) {
-            // If the difference between the current time and origin of the notification are more than the expiry time
-            console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
-            deleteNotification(notificationdb[index].uuid);
-          }
-        }
-
-        if (notificationdb.length == index-1) {
-          const durationInMilliseconds = getDurationInMilliseconds(start);
-          console.log(`[FINISHED] Notification Pruning: ${durationInMilliseconds} ms`);
-        }
-      });
-    } else {
-      console.log('No Saved Notifications, skipping Update Check');
-    }
-  } else {
-    console.log('Notifications have not been successfully imported!');
-    console.log('Attempting to Import Notifications...');
-    notificationImport();
-  }
+  });
 }
 
 module.exports.newNotification = function(title, message, priority) {
-  if (notifyImport) {
-    const start = process.hrtime();
+  return new Promise(function (resolve, reject) {
+    if (notifyImport) {
+      if (title == '' || message == '' || priority == '') {
+        reject('Required Value to create New Notification Missing');
+      } else {
+        const start = process.hrtime();
 
-    let uuidValue = uuidGenerate();
-    let birthTime = Date.now();
+        let uuidValue = uuidGenerate();
+        let birthTime = Date.now();
 
-    let temp_json = {
-      uuid: uuidValue,
-      priority: priority,
-      birth: birthTime,
-      title: title,
-      message: message,
-      extras: {
-        textColor: '#ffffff',
-        bgColor: '#000000'
+        let temp_json = {
+          uuid: uuidValue,
+          priority: priority,
+          birth: birthTime,
+          title: title,
+          message: message,
+          extras: {
+            textColor: '#ffffff',
+            bgColor: '#000000'
+          }
+        }
+
+        try {
+
+          notificationdb.unshift(temp_json);
+          // Using unshift to ensure that the newest is first, since I'd rather not organize these later by birth time.
+          logTime(start, `Notification '${title}'`, 'Creation');
+          this.saveNotification()
+            .then(res => {
+              resolve('SUCCESS');
+            })
+            .catch(err => {
+              reject(err);
+            });
+        } catch(ex) {
+          reject(ex);
+        }
       }
+    } else {
+      reject(notImportERROR);
     }
+  });
+}
 
-    try {
-      notificationdb.unshift(temp_json);
-      // Using unshift to ensure that the newest is first, since I'd rather not organize these later by birth time.
-      const durationInMilliseconds = getDurationInMilliseconds(start);
-      console.log(`Added new Notification ${title} in ${durationInMilliseconds} ms`);
-      saveNotification();
-    } catch(ex) {
-      console.log(ex);
+module.exports.saveNotification = function() {
+  return new Promise(function (resolve, reject) {
+    if (notifyImport) {
+      const start = process.hrtime();
+
+      console.log('Saving Notifications File...');
+
+      try {
+        const path = require('path');
+        var file_handler = require('../modules/file_handler');
+
+        file_handler.write_file(path.join(__dirname, '../settings/notifications.json'), notificationdb, 'Notification DB')
+          .then(res => {
+            logTime(start, 'Notification DB', 'Save');
+            resolve('SUCCESS');
+          })
+          .catch(err => {
+            reject(err);
+          });
+      } catch(err) {
+        reject(err);
+      }
+
+    } else {
+      reject(notImportERROR);
     }
-
-  } else {
-    console.log('Notifications have not been successfully imported!');
-    console.log('Attempting to Import Notifications...');
-    notificationImport();
-  }
+  });
 }
 
 module.exports.initNotification = function() {
-  // This must be called first to start the notification import.
+  return new Promise(function(resolve, reject) {
+    console.log('Beginning Saved Notifications Import...');
 
-  console.log('Beginning Saved Notifications Import...');
+    const start = process.hrtime();
 
-  notificationImport();
-}
+    const path = require('path');
+    var file_handler = require('../modules/file_handler');
 
-function notificationImport() {
-  const start = process.hrtime();
-
-  var fs = require('fs');
-
-  try {
-
-    let rawdata = fs.readFileSync(datapath+notifyFile);
-
-    if (rawdata != '') {
-      let jsondata = JSON.parse(rawdata);
-
-      notificationdb = jsondata;
-
-      notifyImport = true;
-      const durationInMilliseconds = getDurationInMilliseconds(start);
-      console.log(`[FINISHED] Notification Import: ${durationInMilliseconds} ms`);
-      module.exports.emit('ready');
-    } else {
-      console.log('No saved Notifications to import...');
-      const durationInMilliseconds = getDurationInMilliseconds(start);
-      console.log(`[FINISHED] Empty Notification Import: ${durationInMilliseconds} ms`);
-      notifyImport = true;
+    try {
+      file_handler.read_file(path.join(__dirname, '../settings/notifications.json'), 'Notification DB')
+        .then(res => {
+          if (res == 'nodata') {
+            console.log('No saved Notifications to Import...');
+            logTime(start, 'Empty Notification DB', 'Import');
+            notifyImport = true;
+            resolve('SUCCESS');
+          } else {
+            notificationdb = res;
+            logTime(start, 'Notification DB', 'Import');
+            notifyImport = true;
+            resolve('SUCCESS');
+          }
+        })
+        .catch(err => {
+          reject(err);
+        });
+    } catch (err) {
+      reject(err);
     }
-  } catch(ex) {
-    console.log(ex);
-  }
-
+  });
 }
 
-function saveNotification() {
-  const start = process.hrtime();
-  console.log('Saving Notifications File...');
-
-  var fs = require('fs');
-
-  try {
-    fs.writeFile(datapath+notifyFile, JSON.stringify(notificationdb, null, 2), function(err) {
-      if (err) {
-        console.log(`ERROR Occured while writing Notification Data: ${err}`);
-      } else {
-        const durationInMilliseconds = getDurationInMilliseconds(start);
-        console.log(`[FINISHED] Writing Notification Save File: ${durationInMilliseconds} ms`);
-      }
-    });
-  } catch(ex) {
-    console.log(ex);
-  }
-
-}
-
-function deleteNotification(id) {
-  if (notifyImport) {
-    if (notificationdb.length != 0) {
-      const start = process.hrtime();
-
-      notificationdb.forEach((data, index) => {
-        if (id == notificationdb[index].uuid) {
-          // This is the item to remove
-          let removedItem = notificationdb.splice(index, 1);
-          const durationInMilliseconds = getDurationInMilliseconds(start);
-
-          console.log(`Removed below notification in ${durationInMilliseconds} ms`);
-          console.log(removedItem);
-          saveNotification();
-        } else {
-          console.log(`Couldn't find Notification ${id} to Delete...`);
-        }
-      });
-    } else {
-      console.log('No Saved Notifications, deleteNotification Failed...');
-    }
-  } else {
-    console.log('Notifications have not been successfully imported!');
-    console.log('Attempting to Import Notifications...');
-    notificationImport();
-  }
-}
-
-const getDurationInMilliseconds = (start) => {
-  const NS_PER_SEC = 1e9;
-  const NS_TO_MS = 1e6;
-  const diff = process.hrtime(start);
-
-  return (diff[0] * NS_PER_SEC + diff[1]) / NS_TO_MS;
+function logTime(start, friendlyName, action) {
+  var getDurationInMilliseconds = require('./getDurationInMilliseconds');
+  const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
+  console.log(`[FINISHED:notification_worker] ${friendlyName} ${action}: ${durationInMilliseconds} ms`);
 }
 
 function uuidGenerate() {
