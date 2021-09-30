@@ -354,7 +354,7 @@ function fileStats(fsImport, filePath, exifData) {
         let currentDate = Date.now();
 
         if (stats.birthtimeMs) {
-          if (typeof stats.birthtimeMs !=== undefined) {
+          if (typeof stats.birthtimeMs !== undefined) {
             fsBirthTime = stats.birthtimeMs;
           } else {
             fsBirthTime = max_value;

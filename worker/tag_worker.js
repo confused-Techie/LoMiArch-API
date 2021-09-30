@@ -86,7 +86,7 @@ module.exports.initTag = function() {
       var file_handler = require('../modules/file_handler');
 
       try {
-        file_hanlder.read_file(path.join(__dirname, '../json/tags.json'), 'Tag Collection')
+        file_handler.read_file(path.join(__dirname, '../json/tags.json'), 'Tag Collection')
           .then(res => {
             if (res == 'nodata') {
               console.log('No saved Tags to Import...');
@@ -104,7 +104,7 @@ module.exports.initTag = function() {
             reject(err);
           });
       } catch(ex) {
-
+        reject(ex);
       }
     } else {
       resolve('Tags have already been imported.');
