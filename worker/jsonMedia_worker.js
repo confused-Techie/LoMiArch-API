@@ -45,7 +45,6 @@ module.exports.importMedia = function() {
       .then(res => {
         tags.initTag()
           .then(res => {
-            // Once albums are implemented will need to add that as well.
             album.initAlbums()
               .then(res => {
                 resolve(res);
@@ -104,8 +103,25 @@ module.exports.createTag = function(name, colour) {
   })
 }
 
-module.exports.addTag = function() {
-  // TODO
+module.exports.addTag = function(uuidVar, tagToAdd) {
+  return new Promise(function (resolve, reject) {
+    try {
+      if (!uuidVar) reject('UUID Required for Adding Tag to Media');
+      if (!~uuid.indexOf(uuidVar)) reject('Invalid UUID Value');
+
+      // TODO: Add check to ensure tag already exists
+      media.forEach(function(item, index, array) {
+        if (media[index].uuid == uuidVar) {
+          media[index].tag.push(tagToAdd);
+        }
+        if (index == media.length -1) {
+          reject(`UUID ${uuidVar} Could not be found in Media DB`);
+        }
+      });
+    } catch(err) {
+      reject(err);
+    }
+  });
 }
 
 module.exports.getTags = function() {
@@ -155,7 +171,7 @@ module.exports.mediaDetails = function(uuidVar) {
 
       if (!~uuid.indexOf(uuidVar)) reject('Invalid UUID Value');
 
-      media.forEach(function(tem, index, array) {
+      media.forEach(function(item, index, array) {
         if (media[index].uuid == uuidVar) {
           resolve(media[index]);
         }

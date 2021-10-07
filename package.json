@@ -5,7 +5,7 @@
   "main": "logic.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node logic_NEW.js",
+    "dev": "node logic.js",
     "prerun": "node ./scripts/prerun.js",
     "test": "node ./tests/testHelper.js"
   },

@@ -18,7 +18,7 @@ module.exports.createAlbum = function() {
 }
 
 module.exports.editAlbum = function() {
-
+  // This would strictly apply to editing the Album items, rather than editing what content is within it. 
 }
 
 module.exports.deleteAlbum = function() {

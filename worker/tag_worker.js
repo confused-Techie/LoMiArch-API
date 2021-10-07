@@ -69,7 +69,10 @@ module.exports.createTag = function(name, colour) {
 module.exports.addTag = function() {
   return new Promise(function (resolve, reject) {
     if (tagImport) {
-      // TODO
+      // It actually seems that adding a tag should be a responsibility of jsonMedia, since access to the
+      // media database is needed for this function.
+      // this will be discontinued here.
+      resolve('This Method is no longer implemented within Tag Worker. Check jsonMedia:AddTag')
     } else {
       reject(notImport);
     }
