@@ -282,6 +282,11 @@ app.get("/media/:id?", (req, res, next) => {
 
 app.delete("/media/:id?", (req, res, next) => {
   // TODO: Refer to get method
+
+  // This will need to do a few things
+  // convert the UUID passed to an actual image file
+  // delete the json file, and remove the json file from the db
+  // copy the media file to purgatory or trash 
 });
 
 app.get("/import", (req, res, next) => {

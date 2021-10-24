@@ -5,7 +5,8 @@ var rootPath = path.join(__dirname, "../media");
 var writePath = path.join(__dirname, "../json");
 
 module.exports.deleteMedia = function() {
-
+  // This should expect a reason, to then know if the file should be moved to
+  // Purgatory or moved to the trash 
 }
 
 module.exports.importMedia = function(media) {
