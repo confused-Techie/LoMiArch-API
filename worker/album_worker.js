@@ -6,6 +6,8 @@
 // add item to album; should take array or single item
 // also add dynamic album adding, to allow things to be added in the future
 
+// EXAMPLE: { uuid: 'uuidValue', name: 'Album Name', preview: '/media/ofpreview', access: [ 'username-with-access' ] }
+
 var albumdb = [];
 var albumImport = false;
 
@@ -13,12 +15,31 @@ var albumImport = false;
 var alreadyImportRESOLVE = 'Albums have already been imported.';
 var notImportERROR = 'Albums have not been initialized.';
 
-module.exports.createAlbum = function() {
+module.exports.createAlbum = function(albumName, albumPreview, albumCreator) {
+  return new Promise(function (resolve, reject) {
+    if (albumImport) {
+      try {
+        var albumUUID = uuidGenerate();
 
+        // This will expect a valid path for the preview, even though the web UI will return the false one.
+        // So jsonMedia will have to pass this variable properly
+
+        let tempJson = { uuid: albumUUID, name: albumName, preview: albumPreview, access: [ albumCreator ] };
+        albumdb.push(tempJson);
+
+        resolve('Successfully created new album with no Items');
+
+      } catch(err) {
+        reject(err);
+      }
+    } else {
+      reject(notImportERROR);
+    }
+  });
 }
 
 module.exports.editAlbum = function() {
-  // This would strictly apply to editing the Album items, rather than editing what content is within it. 
+  // This would strictly apply to editing the Album items, rather than editing what content is within it.
 }
 
 module.exports.deleteAlbum = function() {
@@ -33,6 +54,10 @@ module.exports.getAlbums = function() {
       reject(notImportERROR);
     }
   });
+}
+
+module.exports.saveAlbums = function() {
+
 }
 
 module.exports.initAlbums = function() {
@@ -77,4 +102,14 @@ function logTime(start, phrase) {
   var getDurationInMilliseconds = require('./getDurationInMilliseconds');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
   console.log(`[FINISHED] ${phrase}: ${durationInMilliseconds} ms`);
+}
+
+function uuidGenerate() {
+  const { v4: uuidv4 } = require('uuid');
+
+  try {
+    return uuidv4();
+  } catch(ex) {
+    return `ERROR Occured: ${ex}`;
+  }
 }
