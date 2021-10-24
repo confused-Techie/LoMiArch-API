@@ -33,3 +33,37 @@ file_handler.read_file(path.join(__dirname, '../json/tags.json'), 'Tag Collectio
       console.log(err);
     });
 ```
+***
+
+#### * Write File
+
+The ```write_file``` function is a Promise that will resolve with a string "SUCCESS" if successful in writing the file, otherwise will reject with the unadulterated error.
+
+```write_file(dataPath, dataToWrite, friendlyName)```:
+  * dataPath: The Full Path to the data.
+  * dataToWrite: The raw data to write. Will have prettified ```JSON.stringify()``` applied to it.
+  * friendlyName: Used for logging purposes only.
+
+Ex.
+
+```javascript
+var tagdb = ' [exData, 0 ], [exData, 1]';
+
+const path = require('path');
+var file_handler = require('../modules/file_handler');
+
+file_handler.write_file(path.join(__dirname, '../json/tags.json'), tagdb, 'TagCollection')
+  .then(res => {
+      // The data has been successfully resolved
+      // And res == 'SUCCESS'
+    })
+    .catch(err => {
+      console.log(err);
+    });
+```
+
+***
+
+#### * Delete File
+
+This has not yet been implemented.
