@@ -21,13 +21,21 @@ module.exports.createAlbum = function(albumName, albumPreview, albumCreator) {
       try {
         var albumUUID = uuidGenerate();
 
-        // This will expect a valid path for the preview, even though the web UI will return the false one.
-        // So jsonMedia will have to pass this variable properly
+        // while originally I was worried about converting the albumPreview to the
+        // Actual Path, since the webUI would be requesting it, this can be converted to the Universal Path
 
         let tempJson = { uuid: albumUUID, name: albumName, preview: albumPreview, access: [ albumCreator ] };
         albumdb.push(tempJson);
 
-        resolve('Successfully created new album with no Items');
+        console.log(`Created ${albumName}...`);
+
+        this.saveAlbums()
+          .then(res => {
+            resolve('Successfully created new album with no Items');
+          })
+          .catch(err => {
+            reject(err);
+          });
 
       } catch(err) {
         reject(err);
@@ -42,8 +50,31 @@ module.exports.editAlbum = function() {
   // This would strictly apply to editing the Album items, rather than editing what content is within it.
 }
 
-module.exports.deleteAlbum = function() {
+module.exports.deleteAlbum = function(albumUUID) {
+  return new Promise(function (resolve, reject) {
+    if (albumImport) {
 
+      try {
+        albumdb.forEach(function(item, index, array) {
+          if (albumUUID == album[index].uuid) {
+            console.log(`Found Matching Album for Deletion: ${album[index].name}, ${album[index].uuid}...`);
+            let removedAlbum = albumdb.splice(index, 1);
+            this.saveAlbums()
+              .then(res => {
+                resolve('SUCCESS');
+              })
+              .catch(err => {
+                reject(err);
+              });
+          }
+        });
+      } catch(err) {
+        reject(err);
+      }
+    } else {
+      reject(notImportERROR);
+    }
+  });
 }
 
 module.exports.getAlbums = function() {
@@ -57,7 +88,32 @@ module.exports.getAlbums = function() {
 }
 
 module.exports.saveAlbums = function() {
+  return new Promise(function (resolve, reject) {
+    if (albumImport) {
+      const start = process.hrtime();
 
+      console.log('Saving Album Collection...');
+
+      try {
+        const path = require('path');
+
+        var file_handler = require('../modules/file_handler');
+
+        file_handler.write_file(path.join(__dirname, '../json/albums.json'), albumdb, 'Album Collection')
+          .then(res => {
+            logTime(start, 'Saving Album Collection');
+            resolve('SUCCESS');
+          })
+          .catch(err => {
+            reject(err);
+          });
+      } catch( err) {
+        reject(err);
+      }
+    } else {
+      reject(notImportERROR);
+    }
+  });
 }
 
 module.exports.initAlbums = function() {

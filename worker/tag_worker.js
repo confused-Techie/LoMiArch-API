@@ -1,5 +1,7 @@
 // This is part of the reworked 'Modular Worker Architecture'
 
+// EXAMPLE: [ [ 'animals', '#9c23e8' ] ]
+
 var tagdb = [];
 var tagImport = false;
 

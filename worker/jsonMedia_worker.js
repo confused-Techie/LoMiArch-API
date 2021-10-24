@@ -162,6 +162,48 @@ module.exports.getAlbums = function() {
   });
 }
 
+module.exports.createAlbum = function(albumName, albumPreview, albumCreator) {
+  return new Promise(function (resolve, reject) {
+    // since the webUI is going to request based off the UniversalPath, no conversion is needed here.
+    album.createAlbum(albumName, albumPreview, albumCreator)
+      .then(res => {
+        resolve(res);
+      })
+      .catch(err => {
+        reject(err);
+      });
+  });
+}
+
+module.exports.deleteAlbum = function(albumUUID) {
+  return new Promise(function (resolve, reject) {
+    album.deleteAlbum(albumUUID)
+      .then(res => {
+        resolve(res);
+      })
+      .catch(err => {
+        reject(err);
+      });
+  });
+}
+
+module.exports.saveAlbums = function() {
+  return new Promise(function (resolve, reject) {
+    album.saveAlbums()
+      .then(res => {
+        resolve(res);
+      })
+      .catch(err => {
+        reject(err);
+      });
+  });
+}
+
+module.exports.editAlbum = function() {
+  // not implemented yet
+  reject('This feature is not currently implemented.');
+}
+
 // ------------------------- MEDIA FEATURES --------------------------------
 
 module.exports.mediaDetails = function(uuidVar) {

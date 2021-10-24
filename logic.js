@@ -89,6 +89,10 @@ app.use(function(req, res, next) {
   next();
 });
 
+// API ENDPOINTS ------------------------------------------------------------
+
+// SERVER KNOWLEDGE API ENDPOINT -----------------------------------
+
 // Define different endpoint event handlers
 // We can assume if we are getting any, then the listen successfully passed the init functions
 app.get("/statuscheck", (req, res, next) => {
@@ -97,7 +101,8 @@ app.get("/statuscheck", (req, res, next) => {
   console.log("Responded to StatusCheck. Running Version: " + pjson);
 });
 
-// Also available: deleteTag, createTag, addTag, saveTag
+// TAG API ENDPOINT ---------------------------------
+
 app.get("/tags", (req, res, next) => {
   console.log("Tag return requested...");
 
@@ -111,6 +116,64 @@ app.get("/tags", (req, res, next) => {
     });
 });
 
+app.delete("/deleteTag", (req, res, next) => {
+  console.log("Delete Tag Requested...");
+
+  var tagName = req.params.tag;
+
+  jsonMedia.deleteTag(tagName)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("/createTag", (req, res, next) => {
+  var tagName = req.params.tagName;
+  var tagColour = req.params.tagColour;
+
+  console.log("Tag Creation Requested...");
+
+  jsonMedia.createTag(tagName, tagColour)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("/addTag", (req, res, next) => {
+  var tagToAdd = req.params.tag;
+  var uuid = req.params.uuid;
+
+  console.log('Adding Tag to Media Requested...');
+
+  jsonMedia.addTag(uuid, tagToAdd)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("/saveTag", (req, res, next) => {
+  console.log('Tag Save Requested...');
+
+  jsonMedia.saveTag()
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+// ALBUM API ENDPOINT ---------------------------------
+
 app.get("/albums", (req, res, next) => {
   console.log('Album return requested...');
   jsonMedia.getAlbums()
@@ -121,6 +184,58 @@ app.get("/albums", (req, res, next) => {
       return error(req, res, 500, err);
     });
 });
+
+app.get("/createAlbum", (req, res, next) => {
+  console.log('Album Creation Requested...');
+  var albumName = req.params.albumName;
+  var albumPreview = req.params.albumPreview;
+
+  // Since authentication is not configured the creator will not be considered and given a default value
+  var albumCreator = 'user';
+
+  jsonMedia.createAlbum(albumName, albumPreview, albumCreator)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.delete("/deleteAlbum", (req, res, next) => {
+  var albumUUID = req.params.albumUUID;
+
+  console.log('Album Deletion Requested...');
+
+  jsonMedia.deleteAlbum(albumUUID)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("/saveAlbum", (req, res, next) => {
+  console.log("Album Saving Requested");
+
+  jsonMedia.saveALbums()
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("/editAlbum", (req, res, next) => {
+  console.log("Edit Album Requested");
+
+  console.log('This feature is not implemented yet.');
+  return error(req, res, 500, 'Not Currently Implemented');
+});
+
+// MEDIA API ENDPOINTS ----------------------------------
 
 app.get("/details/:uuid?", (req, res, next) => {
   var uuid = req.params.uuid;
@@ -186,7 +301,8 @@ app.get("/import", (req, res, next) => {
   }
 });
 
-// Also Available: updateNotification, newNotification, saveNotification,
+// NOTIFICATION API ENDPOINT --------------------------------------------
+
 app.get("/notifications/:id?", (req, res, next) => {
   var id = req.params.id;
 
@@ -227,6 +343,48 @@ app.delete("/notifications/:id?", (req, res, next) => {
       return error(req, res, 500, err);
     });
 });
+
+app.get("/UpdateNotification", (req, res, next) => {
+  console.log('Notification Update Check Requested...');
+
+  notification.updateNotification()
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("/createNotification", (req, res, next) => {
+  var notifyTitle = req.params.title;
+  var notifyMessage = req.params.msg;
+  var notifyPriority = req.params.priority;
+
+  console.log(`Create Notification Requested: ${notifyTitle}`);
+
+  notification.newNotification(notifyTitle, notifyMessage, notifyPriority)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+app.get("saveNotification", (req, res, next) => {
+  console.log('Saving Notifications Requested...');
+
+  notification.saveNotification()
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
+// COMPLEX WORKER API ENDPOINT ------------------------------------------
 
 app.get("/validate", (req, res, next) => {
   // TODO
