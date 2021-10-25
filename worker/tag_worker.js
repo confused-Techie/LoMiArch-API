@@ -25,12 +25,12 @@ module.exports.deleteTag = function(name) {
           let removedItem = tagdb.splice(tagIndex, 1);
           this.saveTag()
             .then(res => {
-              resolve('SUCCESS');
+              resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
             })
             .catch(err => {
               reject(err);
             });
-          resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
+          //resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
         } else {
           reject('Unable to find Tag within Tag DB...');
         }
