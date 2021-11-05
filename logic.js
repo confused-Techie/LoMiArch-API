@@ -392,8 +392,10 @@ app.get("saveNotification", (req, res, next) => {
 // COMPLEX WORKER API ENDPOINT ------------------------------------------
 
 app.get("/validate", (req, res, next) => {
+
+  console.log(`Library Validation Requested.`);
   var validation = require('./worker/validation_worker.js');
-  validation.validate(jsonMedia, notification)
+  validation.validate(jsonMedia.getMedia(), notification)
     .then(result => {
       res.json(result);
     })

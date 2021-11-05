@@ -25,12 +25,11 @@ module.exports.validate = function(media, notify) {
       if (media.length != 0) {
 
         media.forEach((data, index) => {
-          let currentMD5 = md5Generate(rootPath.join(__dirname, `../${media[index].pod_loc}`));
+          let currentMD5 = md5Generate(path.join(__dirname, `../${media[index].pod_loc}`));// `/${media[index].pod_loc}`);
           if (currentMD5.includes('ERROR')) {
             // ERROR occured while generating strict hash
             console.log(`Validation ERROR: Failed to Generate current MD5 Hash: ${currentMD5} : For ${media[index].pod_loc}`);
             uncheckedItems++;
-            itemsChecked++;
           } else {
             try {
               if (currentMD5 != media[index].md5) {
@@ -44,10 +43,10 @@ module.exports.validate = function(media, notify) {
                     console.log(`Validation ERROR: Corrupt Media Found. Successfully created Notification. Media: ${media[index].pod_loc}`);
                   })
                   .catch(err => {
-                    console.log(`Validation ERROR: Corrupt Media Found. Failed to create Notification. Media: ${media[index].pod_loc}`);
+                    console.log(`Validation ERROR: Corrupt Media Found. Failed to create Notification. Media: ${media[index].pod_loc}; Error: ${err}`);
                   });
                 corruptItems++;
-                uncheckedItems++;
+                itemsChecked++;
               } else {
                 // the hashes do match
                 // Since logging this would create uneeded junk logs, we will just add to the checked total
@@ -57,12 +56,11 @@ module.exports.validate = function(media, notify) {
               // Most likely the check on the md5 index failed, possibly meaning that this item has no hash.
               console.log(`Validation ERROR: Failed to Check MD5 Hash: ${media[index].md5} is the current Hash. Error: ${err}`);
               uncheckedItems++;
-              itemsChecked++;
             }
           }
         });
 
-        if (itemsToCheck == itemsChecked) {
+        if (itemsToCheck == itemsChecked + uncheckedItems) {
           // this would indicate that all items are done being checked.
           // Here we can report back with logs and a notification the amount of corrupt items and total items.
           logTime(start, 'Checking Validity of All Library Items');
@@ -83,7 +81,8 @@ function md5Generate(file) {
   const CryptoJS = require('crypto-js');
   var fs = require('fs');
 
-  const rawFile = fsImport.readFileSync(file).toString('binary');
+  console.log(`DEBUG:: Generating Hash: ${file}`);
+  const rawFile = fs.readFileSync(file).toString('binary');
 
   try {
     const md5Hash = CryptoJS.MD5(rawFile);

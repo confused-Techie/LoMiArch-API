@@ -9,6 +9,10 @@ var notImportERROR = 'Notifications have not been initialized';
 var noSaveERROR = 'No Saved Notifications, Unable to search for specific one';
 var noIDERROR = 'Notification ID Must be specified to return a value';
 
+// Since calling this.someFunc() failed with
+// TypeError: this.someFunc is not a function
+var _this = this;
+
 module.exports.getNotifications = function() {
   return new Promise(function (resolve, reject) {
     if (notifyImport) {
@@ -60,7 +64,7 @@ module.exports.deleteNotification = function(id) {
               let removedItem = notificationdb.splice(index, 1);
               logTime(start, 'Notification', 'Removal');
               console.log(removedItem);
-              this.saveNotification()
+              _this.saveNotification()
                 .then(res => {
                   resolve('SUCCESS');
                 })
@@ -102,7 +106,7 @@ module.exports.updateNotification = function() {
             if (currentTime - notificationdb[index].birth > notifyExpiry) {
               // If the difference between the current time and origin of the notifications are more than the expiry time
               console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
-              this.deleteNotification(notificationdb[index].uuid)
+              _this.deleteNotification(notificationdb[index].uuid)
                 .then(res => {
                   logTime(start, `Notification '${notificationdb[index].title}'`, 'Pruning');
                 })
@@ -116,7 +120,7 @@ module.exports.updateNotification = function() {
 
           if (index == notificationdb.length -1) {
             logTime(start, 'Notification DB', 'Pruning');
-            this.saveNotification()
+            _this.saveNotification()
               .then(res => {
                 resolve('SUCCESS');
               })
@@ -163,7 +167,7 @@ module.exports.newNotification = function(title, message, priority) {
           notificationdb.unshift(temp_json);
           // Using unshift to ensure that the newest is first, since I'd rather not organize these later by birth time.
           logTime(start, `Notification '${title}'`, 'Creation');
-          this.saveNotification()
+          _this.saveNotification()
             .then(res => {
               resolve('SUCCESS');
             })
