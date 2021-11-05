@@ -15,30 +15,34 @@ var albumImport = false;
 var alreadyImportRESOLVE = 'Albums have already been imported.';
 var notImportERROR = 'Albums have not been initialized.';
 
+// this is needing to fix the save call from this.saveAlbum() to _this.saveAlbum()
+var _this = this;
+
 module.exports.createAlbum = function(albumName, albumPreview, albumCreator) {
   return new Promise(function (resolve, reject) {
     if (albumImport) {
-      try {
-        var albumUUID = uuidGenerate();
+      if (albumName == '' || albumPreview == '' || albumCreator == '' || albumName == null || albumPreview == null || albumCreator == null) {
+        reject('Required Value to create Album is missing');
+      } else {
+        try {
+          var albumUUID = uuidGenerate();
+          // while originally I was worried about converting the albumPreview to the
+          // Actual Path, since the webUI would be requesting it, this can be convereted to the Universal Path
+          let tempJson = { uuid: albumUUID, name: albumName, preview: albumPreview, access: [ albumCreator ] };
+          albumdb.push(tempJson);
 
-        // while originally I was worried about converting the albumPreview to the
-        // Actual Path, since the webUI would be requesting it, this can be converted to the Universal Path
+          console.log(`Created ${albumName}...`);
 
-        let tempJson = { uuid: albumUUID, name: albumName, preview: albumPreview, access: [ albumCreator ] };
-        albumdb.push(tempJson);
-
-        console.log(`Created ${albumName}...`);
-
-        this.saveAlbums()
-          .then(res => {
-            resolve('Successfully created new album with no Items');
-          })
-          .catch(err => {
-            reject(err);
-          });
-
-      } catch(err) {
-        reject(err);
+          _this.saveAlbums()
+            .then(res => {
+              resolve('Successfully created new album with no Items');
+            })
+            .catch(err => {
+              reject(err);
+            });
+        } catch(err) {
+          reject(err);
+        }
       }
     } else {
       reject(notImportERROR);
@@ -59,7 +63,7 @@ module.exports.deleteAlbum = function(albumUUID) {
           if (albumUUID == album[index].uuid) {
             console.log(`Found Matching Album for Deletion: ${album[index].name}, ${album[index].uuid}...`);
             let removedAlbum = albumdb.splice(index, 1);
-            this.saveAlbums()
+            _this.saveAlbums()
               .then(res => {
                 resolve('SUCCESS');
               })

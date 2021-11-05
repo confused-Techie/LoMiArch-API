@@ -142,7 +142,7 @@ module.exports.updateNotification = function() {
 module.exports.newNotification = function(title, message, priority) {
   return new Promise(function (resolve, reject) {
     if (notifyImport) {
-      if (title == '' || message == '' || priority == '') {
+      if (title == '' || message == '' || priority == '' || title == null || message == null || priority == null) {
         reject('Required Value to create New Notification Missing');
       } else {
         const start = process.hrtime();

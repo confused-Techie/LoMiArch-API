@@ -8,6 +8,8 @@ var tagImport = false;
 // ERROR DECLARATIONS
 var notImport = 'Tags have not been initialized';
 
+var _this = this;
+
 module.exports.deleteTag = function(name) {
   return new Promise(function (resolve, reject) {
     if (tagImport) {
@@ -23,7 +25,7 @@ module.exports.deleteTag = function(name) {
 
         if (tagIndex != '') {
           let removedItem = tagdb.splice(tagIndex, 1);
-          this.saveTag()
+          _this.saveTag()
             .then(res => {
               resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
             })
@@ -46,21 +48,25 @@ module.exports.deleteTag = function(name) {
 module.exports.createTag = function(name, colour) {
   return new Promise(function (resolve, reject) {
     if (tagImport) {
-      try {
-        var tempTag = [ name, colour ];
+      if (name == '' || name == null || colour == '' || colour == null) {
+        reject('Required value to create Tag is missing');
+      } else {
+        try {
+          var tempTag = [ name, colour ];
 
-        tagdb.unshift(tempTag);
-        // Using unshift to avoid organizing, and can keep them newest to oldest
-        console.log(`Added ${tempTag[0]} to Tag Collection...`);
-        this.saveTag()
-          .then(res => {
-            resolve('SUCCESS');
-          })
-          .catch(err => {
-            reject(err);
-          });
-      } catch(ex) {
-        reject(ex);
+          tagdb.unshift(tempTag);
+          // Using unshift to avoid organizing, and can keep them newest to oldest
+          console.log(`Added ${tempTag[0]} to Tag Collection...`);
+          _this.saveTag()
+            .then(res => {
+              resolve('SUCCESS');
+            })
+            .catch(err => {
+              reject(err);
+            });
+        } catch(ex) {
+          reject(ex);
+        }
       }
     } else {
       reject(notImport);
