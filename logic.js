@@ -286,7 +286,7 @@ app.delete("/media/:id?", (req, res, next) => {
   // This will need to do a few things
   // convert the UUID passed to an actual image file
   // delete the json file, and remove the json file from the db
-  // copy the media file to purgatory or trash 
+  // copy the media file to purgatory or trash
 });
 
 app.get("/import", (req, res, next) => {
@@ -392,5 +392,12 @@ app.get("saveNotification", (req, res, next) => {
 // COMPLEX WORKER API ENDPOINT ------------------------------------------
 
 app.get("/validate", (req, res, next) => {
-  // TODO
+  var validation = require('./worker/validation_worker.js');
+  validation.validate(jsonMedia, notification)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
 });
