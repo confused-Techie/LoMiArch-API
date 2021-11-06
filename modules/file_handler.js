@@ -49,7 +49,43 @@ module.exports.write_file = function( datapath, datatowrite, friendlyName ) {
 
 module.exports.delete_file = function( datapath, friendlyName ) {
   return new Promise(function (resolve, reject) {
+    const start = process.hrtime();
 
+    var fs = require('fs');
+
+    try {
+      fs.rm(datapath, function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          logTime(start, friendlyName, 'Remove');
+          resolve('SUCCESS');
+        }
+      });
+    } catch(err) {
+      reject(err);
+    }
+  });
+}
+
+module.exports.copy_file = function(origPath, newPath, friendlyName ) {
+  return new Promise(function (resolve, reject) {
+    const start = process.hrtime();
+
+    var fs = require('fs');
+
+    try {
+      fs.copyFile(origPath, newPath)
+        .then(res => {
+          logTime(start, friendlyName, 'Copy');
+          resolve('SUCCESS');
+        })
+        .catch(err => {
+          reject(err);
+        });
+    } catch(err) {
+      reject(err);
+    }
   });
 }
 
