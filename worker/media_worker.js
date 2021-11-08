@@ -5,9 +5,76 @@ var path = require('path');
 var rootPath = path.join(__dirname, "../media");
 var writePath = path.join(__dirname, "../json");
 
-module.exports.deleteMedia = function() {
+module.exports.deleteMedia = function(filePath, reason, fileName) {
   // This should expect a reason, to then know if the file should be moved to
   // Purgatory or moved to the trash
+  return new Promise(function (resolve, reject) {
+    console.log('Removal of Media Requested...');
+
+    const start = process.hrtime();
+
+    var file_handler = require('../modules/file_handler.js');
+
+    if (filePath == '' || filePath == null || reason == '' || reason == null || fileName == '' || fileName == null) {
+      reject('Required Value for Delete Media Missing...');
+    } else {
+      // Regaurdless of the reason, this will need to do two things.
+      // Copy the file to the proper location
+      // And then delete the original file.
+      // The only difference here will be the location it needs to move two.
+      if (reason == 'purgatory') {
+        var purgPath = path.join(__dirname, `../media/purgatory/${fileName}`);
+
+        file_handler.copy_file(filePath, purgPath, fileName)
+          .then(res => {
+            if (res == 'SUCCESS') {
+              // Now that the file has successfully been copied to the new location, we will request deletion of the original file.
+              file_handler.delete_file(filePath, fileName)
+                .then(res => {
+                  if (res == 'SUCCESS') {
+                    // The file has now been successfully deleted.
+                    logTime(start, `Moving ${fileName} to Purgatory`);
+                    resolve('SUCCESS');
+                  } else {
+                    reject(`Unknown Resolve on File Deletion: ${res}`);
+                  }
+                })
+                .catch(err => {
+                  reject(`Failed to Delete file During Deletion: ${err}`);
+                });
+            } else {
+              reject(`Unknown Resolve on Copy File: ${res}`);
+            }
+          })
+          .catch(err => {
+            reject(`Failed to Copy File During Deletion: ${err}`);
+          });
+
+      } else if (reason == 'trash') {
+        var trashPath = path.join(__dirname, `../media/trash/${fileName}`);
+
+        file_handler.copy_file(filePath, trashPath, fileName)
+          .then(res => {
+            // Now with a successfully copied file we can delete the original.
+            file_handler.delete_file(filePath, fileName)
+              .then(res => {
+                // Now with the file successfully deleted we can resolve.
+                logTime(start, `Moving ${fileName} to the Trash Folder`);
+                resolve('SUCCESS');
+              })
+              .catch(err => {
+                reject(`Failed to Delete file During Deletion: ${err}`);
+              })
+          })
+          .catch(err => {
+            reject(`Failed to Copy File During Deletion: ${err}`);
+          });
+
+      } else {
+        reject(`Unrecognized reason for media removal: ${reason}; Valid reasons: purgatory, trash`);
+      }
+    }
+  });
 }
 
 module.exports.importMedia = function(media) {
