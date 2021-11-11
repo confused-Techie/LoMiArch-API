@@ -287,6 +287,36 @@ app.delete("/media/:id?", (req, res, next) => {
   // convert the UUID passed to an actual image file
   // delete the json file, and remove the json file from the db
   // copy the media file to purgatory or trash
+
+  var id = req.params.id;
+
+  console.log(`Media Deletion Requested via API: ${id}...`);
+
+  // Since jsonMedia_worker has a faster method of determining weather a uuid is valid, and will give me the
+  // physical path, we will invoke that first unlike validation_worker
+
+  jsonMedia.mediaDetails(id)
+    .then(jsonResult => {
+      // Now with all the files data, we can remove the JSON data then the file
+      jsonMedia.removeMedia(id, 'trash')
+        .then(jsonRemoveResult => {
+          media.deleteMedia(path.join(__dirname, `./${jsonResult.pod_loc}`), 'trash', `${jsonResult.uuid}.${jsonResult.exactType}`)
+            .then(mediaRemoveResult => {
+              // Now with the media fully deleted, and its JSON data inside the blacklist, we could create a notification
+              // But the notification is better to be set by a variable. So we will just return
+              res.json(`Successfully Moved ${id} to the Trash`);
+            })
+            .catch(err => {
+              return error(req, res, 400, err);
+            });
+        })
+        .catch(err => {
+          return error(req, res, 400, err);
+        });
+    })
+    .catch(err => {
+      return error(req, res, 400, err);
+    });
 });
 
 app.get("/import", (req, res, next) => {
@@ -395,7 +425,7 @@ app.get("/validate", (req, res, next) => {
 
   console.log(`Library Validation Requested.`);
   var validation = require('./worker/validation_worker.js');
-  validation.validate(jsonMedia.getMedia(), notification)
+  validation.validate(jsonMedia.getMedia(), notification, media, jsonMedia)
     .then(result => {
       res.json(result);
     })
