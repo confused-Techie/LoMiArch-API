@@ -281,7 +281,6 @@ app.get("/media/:id?", (req, res, next) => {
 });
 
 app.delete("/media/:id?", (req, res, next) => {
-  // TODO: Refer to get method
 
   // This will need to do a few things
   // convert the UUID passed to an actual image file
