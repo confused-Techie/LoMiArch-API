@@ -228,6 +228,85 @@ module.exports.mediaDetails = function(uuidVar) {
   });
 }
 
+module.exports.removeMedia = function(uuidVar, reason) {
+  return new Promise(function (resolve, reject) {
+    const start = process.hrtime();
+    var file_handler = require('../modules/file_handler.js');
+
+    console.log('Removal of Media Requested');
+
+    try {
+      if (!uuidVar) reject('Media ID Required');
+      if (!~uuid.indexOf(uuidVar)) reject('Invalid Media Request');
+      if (!reason) reject('Reason required for Media Removal');
+      if (reason != 'purgatory' && reason != 'trash') reject(`Not Valid Removal Reason Requested: ${reason}`);
+
+      const blacklistWrite = function(dataToWrite) {
+        file_handler.write_file(path.join(__dirname, '../settings/blacklist.json'), dataToWrite, 'Blacklist File')
+          .then(res => {
+            if (res == 'SUCCESS') {
+              resolve('SUCCESS');
+            } else {
+              reject(`Writing to Blacklist resolved incorrectly: ${res}`);
+            }
+          })
+          .catch(err => {
+            reject(`Error Writing to Blacklist: ${err}`);
+          });
+      };
+
+      //logtime start phrase
+      media.forEach(function(item, index, array) {
+        if (media[index].uuid == uuidVar) {
+          // This is the matching item.
+          let removedItem = media.splice(index, 1);
+
+          // Now to move this json data into a purgatory or trash location depending on the reason provided.
+          // Keep in mind this data is all being written to the blacklist file.
+          file_handler.read_file(path.join(__dirname, '../settings/blacklist.json'), 'Blacklist File')
+            .then(res => {
+              // Now with the blacklist file we can add the new removed item to it.
+
+              if (res == 'nodata') {
+                // The file is empty
+                var jsonToWrite = [];
+                var tempBlacklistJSON = {
+                  uuid: `${removedItem.uuid}`,
+                  reason: `${reason}`,
+                  time_removed: Date.now(),
+                  data: removedItem
+                };
+
+                jsonToWrite.push(tempBlacklistJSON);
+                blacklistWrite(jsonToWrite);
+              } else {
+                // File is not empty, add to it
+                var tempBlacklistJSON = {
+                  uuid: `${removedItem.uuid}`,
+                  reason: `${reason}`,
+                  time_removed: Date.now(),
+                  data: removedItem
+                };
+
+                res.push(tempBlacklistJSON);
+                blacklistWrite(res);
+              }
+            })
+            .catch(err => {
+              reject(`Error Reading Blacklist File: ${err}`);
+            });
+        }
+
+        if (index == media.length -1) {
+          reject(`UUID ${uuidVar} could not be found in the Media Database`);
+        }
+      });
+    } catch(err) {
+      reject(`Error Occured During JSON Media Removal: ${err}`);
+    }
+  });
+}
+
 module.exports.mediaFile = function(uuidVar) {
   return new Promise(function (resolve, reject) {
     try {

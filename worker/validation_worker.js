@@ -8,7 +8,7 @@
 var path = require('path');
 var rootPath = path.join(__dirname, "../media");
 
-module.exports.validate = function(media, notify) {
+module.exports.validate = function(media, notify, media_worker, json_worker) {
   return new Promise(function (resolve, reject) {
     // To validate data we will use the md5 hash that accompanies each item.  With that hash we can then check
     // the validity of that hash matching with a newly generated MD5 Hash.
@@ -39,8 +39,24 @@ module.exports.validate = function(media, notify) {
                 notify.newNotification('Corrupt Media Found', notifyMessage, 1)
                   .then(res => {
                     // Now it is time to move this item to purgatory folder.
-                    // TODO: Handle this with the media handler
+
                     console.log(`Validation ERROR: Corrupt Media Found. Successfully created Notification. Media: ${media[index].pod_loc}`);
+
+                    media_worker.deleteMedia(path.join(__dirname, `../${media[index].pod_loc}`), 'purgatory', `${media[index].uuid}.${media[index].exactType}`)
+                      .then(res => {
+                        // Now with the file moved appropriatly, and media_worker deleting the original, we need to handle the json data
+                        json_worker.removeMedia(media[index].uuid, 'purgatory')
+                          .then(res => {
+                            resolve(`Corrupt Media has successfully been moved into the Purgatory folder, and its meta data moved into the Blacklist`);
+                          })
+                          .catch(err => {
+                            reject(err);
+                          });
+                      })
+                      .catch(err => {
+                        reject(err);
+                      });
+
                   })
                   .catch(err => {
                     console.log(`Validation ERROR: Corrupt Media Found. Failed to create Notification. Media: ${media[index].pod_loc}; Error: ${err}`);
