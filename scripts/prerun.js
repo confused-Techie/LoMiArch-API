@@ -7,7 +7,8 @@ var files = [
   { loc: '../settings/notifications.json', shortLoc: 'notifications.json' },
   { loc: '../settings/blacklist.json', shortLoc: 'blacklist.json' },
   { loc: '../json/albums.json', shortLoc: 'albums.json' },
-  { loc: '../json/tags.json', shortLoc: 'tags.json' }
+  { loc: '../json/tags.json', shortLoc: 'tags.json' },
+  { loc: '../.env', shortLoc: '.env' }
 ];
 
 var folders = [

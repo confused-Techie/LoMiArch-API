@@ -5,6 +5,10 @@ var express = require("express");
 var app = express();
 const path = require('path');
 
+const { test_env, test2 } = require('./modules/env_config.js');
+console.log(test_env);
+console.log(test2);
+
 // Personal Worker Import
 var getDurationInMilliseconds = require('./worker/getDurationInMilliseconds.js');
 var notification = require('./worker/notification_worker.js');

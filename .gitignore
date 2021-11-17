@@ -4,3 +4,5 @@ node_modules/
 media/*
 #My media json
 json/*
+# env variables
+.env
