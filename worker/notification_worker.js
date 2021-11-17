@@ -93,7 +93,9 @@ module.exports.updateNotification = function() {
   return new Promise(function (resolve, reject) {
     // This will simly be a check for low priority notifications to clear properly.
 
-    var notifyExpiry = 6.048e8; // This defualt value is a full week.
+    const { notify_expiry } = require('../modules/env_config.js');
+
+    //var notifyExpiry = 6.048e8; // This defualt value is a full week.
 
     if (notifyImport) {
       if (notificationdb.length != 0) {
@@ -103,7 +105,7 @@ module.exports.updateNotification = function() {
           if (notificationdb[index].priority == 3) {
             // Ensure that the priority is one that can be pruned
             let currentTime = Date.now();
-            if (currentTime - notificationdb[index].birth > notifyExpiry) {
+            if (currentTime - notificationdb[index].birth > notify_expiry) {
               // If the difference between the current time and origin of the notifications are more than the expiry time
               console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
               _this.deleteNotification(notificationdb[index].uuid)
