@@ -3,7 +3,6 @@ var fs = require('fs');
 const path = require('path');
 
 var files = [
-  { loc: '../settings/test.json', shortLoc: 'test.json' },
   { loc: '../settings/notifications.json', shortLoc: 'notifications.json' },
   { loc: '../settings/blacklist.json', shortLoc: 'blacklist.json' },
   { loc: '../json/albums.json', shortLoc: 'albums.json' },
