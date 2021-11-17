@@ -5,10 +5,7 @@ var express = require("express");
 var app = express();
 const path = require('path');
 
-const { test_env, test2 } = require('./modules/env_config.js');
-console.log(test_env);
-console.log(test2);
-
+const { listen_port } = require('./modules/env_config.js');
 //logger.log('critical', 'logic.js', 'Global', 'test');
 
 // Personal Worker Import
@@ -32,36 +29,39 @@ jsonMedia.importMedia()
         // Now to start up the actual server, and declare handling of shutdown
 
         logger.log('notice', 'logic.js', 'initNotification=>res', 'Attempting to startup the Server');
-        const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
+        const server = app.listen(listen_port, () => logger.log('notice', 'logic.js', 'Global', `API Server running on port ${listen_port}...`));
 
         // Allow a graceful shutdown
         process.on('SIGTERM', () => {
-          console.log('SIGTERM Signal Received: Closing HTTP Server');
+          logger.log('emergency', 'logic.js', 'Global', 'SIGTERM Signal Received: Closing HTTP Server');
           server.close(() => {
-            console.log('HTTP Server Closed');
+            logger.log('emergency', 'logic.js', 'Global', 'HTTP Server Closed');
           });
         });
 
         process.on('SIGINT', () => {
-          console.log('SIGINT Signal Received: Closing HTTP Server');
+          logger.log('emergency', 'logic.js', 'Global', 'SIGINT Signal Received: Closing HTTP Server');
           server.close(() => {
-            console.log('HTTP Server Closed');
+            logger.log('emergency', 'logic.js', 'Global', 'HTTP Server Closed');
           });
         });
 
       })
       .catch(err => {
-        console.log(err);
+        logger.log('emergency', 'logic.js', 'initNotification=>catch', err);
       });
   })
   .catch(err => {
-    console.log(err);
+    logger.log('emergency', 'logic.js', 'importMedia=>catch', err);
   });
 
 // Define an error handler
 
 function error(req, res, status, msg) {
-  console.error(msg);
+  // As of now these will all be logged under 'error', but this function handles serverside and clientside errors.
+  // Once the returns have status codes baked in this should check and only report serverside errors as 'error', and clientside under 'warning'
+  // TODO:
+  logger.log('error', 'logic.js', 'error()', msg);
   res.status(status);
   res.status(status).json(msg);
 }
@@ -69,13 +69,13 @@ function error(req, res, status, msg) {
 app.use(function(req, res, next) {
   // Middleware to help find the timing of functions
   const logStarted = (msg) => {
-    console.log(`${msg} [STARTED]`);
+    logger.log('info', 'logic.js', 'logStarted', `${msg} [STARTED]`);
   };
   const logFinished = (msg, time) => {
-    console.log(`${msg} [FINISHED] ${time} ms`);
+    logger.log('info', 'logic.js', 'logFinished', `${msg} [FINISHED] ${time} ms`);
   };
   const logClosed = (msg, time) => {
-    console.log(`${msg} [CLOSED] ${time} ms`);
+    logger.log('info', 'logic.js', 'logClosed', `${msg} [CLOSED] ${time} ms`);
   };
 
   logStarted (`${req.method} ${req.originalUrl}`);
@@ -106,13 +106,13 @@ app.use(function(req, res, next) {
 app.get("/statuscheck", (req, res, next) => {
   var pjson = require('./package.json').version;
   res.json({status: "ok", version: pjson, app: "lomiarch-api" });
-  console.log("Responded to StatusCheck. Running Version: " + pjson);
+  logger.log('debug', 'logic.js', 'GET /statuscheck', `Responded to StatusCheck. Running Version: ${pjson}`);
 });
 
 // TAG API ENDPOINT ---------------------------------
 
 app.get("/tags", (req, res, next) => {
-  console.log("Tag return requested...");
+  logger.log('debug', 'logic.js', 'GET /tags', "Tag return requested...");
 
   jsonMedia.getTags()
     .then(result => {
@@ -125,7 +125,7 @@ app.get("/tags", (req, res, next) => {
 });
 
 app.delete("/deleteTag", (req, res, next) => {
-  console.log("Delete Tag Requested...");
+  logger.log('debug', 'logic.js', 'DELETE /deleteTag', "Delete Tag Requested...");
 
   var tagName = req.params.tag;
 
@@ -142,7 +142,7 @@ app.get("/createTag", (req, res, next) => {
   var tagName = req.params.tagName;
   var tagColour = req.params.tagColour;
 
-  console.log("Tag Creation Requested...");
+  logger.log('debug', 'logic.js', 'GET /createTag', "Tag Creation Requested...");
 
   jsonMedia.createTag(tagName, tagColour)
     .then(result => {
@@ -157,7 +157,7 @@ app.get("/addTag", (req, res, next) => {
   var tagToAdd = req.params.tag;
   var uuid = req.params.uuid;
 
-  console.log('Adding Tag to Media Requested...');
+  logger.log('debug', 'logic.js', 'GET /addTag', 'Adding Tag to Media Requested...');
 
   jsonMedia.addTag(uuid, tagToAdd)
     .then(result => {
@@ -169,7 +169,7 @@ app.get("/addTag", (req, res, next) => {
 });
 
 app.get("/saveTag", (req, res, next) => {
-  console.log('Tag Save Requested...');
+  logger.log('debug', 'logic.js', 'GET /saveTag', 'Tag Save Requested...');
 
   jsonMedia.saveTag()
     .then(result => {
@@ -183,7 +183,7 @@ app.get("/saveTag", (req, res, next) => {
 // ALBUM API ENDPOINT ---------------------------------
 
 app.get("/albums", (req, res, next) => {
-  console.log('Album return requested...');
+  logger.log('debug', 'logic.js', 'GET /albums', 'Album return requested...');
   jsonMedia.getAlbums()
     .then(result => {
       res.json(result);
@@ -194,7 +194,7 @@ app.get("/albums", (req, res, next) => {
 });
 
 app.get("/createAlbum", (req, res, next) => {
-  console.log('Album Creation Requested...');
+  logger.log('debug', 'logic.js', 'GET /createAlbum', 'Album Creation Requested...');
   var albumName = req.params.albumName;
   var albumPreview = req.params.albumPreview;
 
@@ -213,7 +213,7 @@ app.get("/createAlbum", (req, res, next) => {
 app.delete("/deleteAlbum", (req, res, next) => {
   var albumUUID = req.params.albumUUID;
 
-  console.log('Album Deletion Requested...');
+  logger.log('debug', 'logic.js', 'DELETE /deleteAlbum', 'Album Deletion Requested...');
 
   jsonMedia.deleteAlbum(albumUUID)
     .then(result => {
@@ -225,7 +225,7 @@ app.delete("/deleteAlbum", (req, res, next) => {
 });
 
 app.get("/saveAlbum", (req, res, next) => {
-  console.log("Album Saving Requested");
+  logger.log('debug', 'logic.js', 'GET /saveAlbum', "Album Saving Requested...");
 
   jsonMedia.saveALbums()
     .then(result => {
@@ -237,9 +237,9 @@ app.get("/saveAlbum", (req, res, next) => {
 });
 
 app.get("/editAlbum", (req, res, next) => {
-  console.log("Edit Album Requested");
+  logger.log('debug', 'logic.js', 'GET /editAlbum', "Edit Album Requested");
 
-  console.log('This feature is not implemented yet.');
+  logger.log('warning', 'logic.js', 'GET /editAlbum', 'This feature is not implemented yet.');
   return error(req, res, 500, 'Not Currently Implemented');
 });
 
@@ -248,7 +248,7 @@ app.get("/editAlbum", (req, res, next) => {
 app.get("/details/:uuid?", (req, res, next) => {
   var uuid = req.params.uuid;
 
-  console.log(`Content Details Requested: ${uuid}...`);
+  logger.log('debug', 'logic.js', 'GET /details/:uuid?', `Content Details Requested: ${uuid}...`);
   jsonMedia.mediaDetails(uuid)
     .then(result => {
       res.json(result);
@@ -263,6 +263,8 @@ app.get("/gallery/:type?", (req, res, next) => {
   var type = req.params.type;
   const page = parseInt(req.query.page);
 
+  logger.log('debug', 'logic.js', 'GET /gallery/:type?', `Gallery Requested ${type}...`);
+
   jsonMedia.mediaCollection(type, page)
     .then(result => {
       res.json(result);
@@ -275,12 +277,12 @@ app.get("/gallery/:type?", (req, res, next) => {
 app.get("/media/:id?", (req, res, next) => {
   var id = req.params.id;
 
-  console.log(`Media Requested: ${id}...`);
+  logger.log('debug', 'logic.js', 'GET /media/:id?', `Media Requested: ${id}...`);
 
   jsonMedia.mediaFile(id)
     .then(result => {
       res.sendFile(path.join(__dirname, String(result)));
-      console.log("Responding to Media Request...");
+      logger.log('debug', 'logic.js', 'GET /media/:id?', "Responding to Media Request...");
     })
     .catch(err => {
       // Again may need to include error checking
@@ -297,7 +299,7 @@ app.delete("/media/:id?", (req, res, next) => {
 
   var id = req.params.id;
 
-  console.log(`Media Deletion Requested via API: ${id}...`);
+  logger.log('debug', 'logic.js', 'DELETE /media/:id?', `Media Deletion Requested via API: ${id}...`);
 
   // Since jsonMedia_worker has a faster method of determining weather a uuid is valid, and will give me the
   // physical path, we will invoke that first unlike validation_worker
@@ -327,13 +329,13 @@ app.delete("/media/:id?", (req, res, next) => {
 });
 
 app.get("/import", (req, res, next) => {
-  console.log("Import Requested...");
+  logger.log('debug', 'logic.js', 'GET /import', "Import Requested...");
 
   try {
     media.importMedia(jsonMedia.getMedia)
       .then(result => {
         res.json('Successfully Imported Items');
-        console.log('Returned successful Json Object');
+        logger.log('debug', 'logic.js', 'GET /import', 'Returned successful Json Object');
       })
       .catch(err => {
         return error(req, res, 500, err);
@@ -348,11 +350,11 @@ app.get("/import", (req, res, next) => {
 app.get("/notifications/:id?", (req, res, next) => {
   var id = req.params.id;
 
-  console.log(`Notification Requested: ${id}...`);
+  logger.log('debug', 'logic.js', 'GET /notifications/:id?', `Notification Requested: ${id}...`);
 
   if (!id) {
     // With no notification ID specified will return all
-    console.log(`No Notification ID Specified, returning all...`);
+    logger.log('debug', 'logic.js', 'GET /notifications/:id?', `No Notification ID Specified, returning all...`);
     notification.getNotifications()
       .then(result => {
         res.json(result);
@@ -375,7 +377,7 @@ app.get("/notifications/:id?", (req, res, next) => {
 app.delete("/notifications/:id?", (req, res, next) => {
   var id = req.params.id;
 
-  console.log(`Notification Deletion Requested: ${id}`);
+  logger.log('debug', 'logic.js', 'DELETE /notifications/:id?', `Notification Deletion Requested: ${id}`);
 
   notification.deleteNotification(id)
     .then(result => {
@@ -387,7 +389,7 @@ app.delete("/notifications/:id?", (req, res, next) => {
 });
 
 app.get("/UpdateNotification", (req, res, next) => {
-  console.log('Notification Update Check Requested...');
+  logger.log('debug', 'logic.js', 'GET /UpdateNotification', 'Notification Update Check Requested...');
 
   notification.updateNotification()
     .then(result => {
@@ -403,7 +405,7 @@ app.get("/createNotification", (req, res, next) => {
   var notifyMessage = req.params.msg;
   var notifyPriority = req.params.priority;
 
-  console.log(`Create Notification Requested: ${notifyTitle}`);
+  logger.log('debug', 'logic.js', 'GET /createNotification', `Create Notification Requested: ${notifyTitle}`);
 
   notification.newNotification(notifyTitle, notifyMessage, notifyPriority)
     .then(result => {
@@ -414,8 +416,8 @@ app.get("/createNotification", (req, res, next) => {
     });
 });
 
-app.get("saveNotification", (req, res, next) => {
-  console.log('Saving Notifications Requested...');
+app.get("/saveNotification", (req, res, next) => {
+  logger.log('debug', 'logic.js', 'GET /saveNotification', 'Saving Notifications Requested...');
 
   notification.saveNotification()
     .then(result => {
@@ -430,7 +432,7 @@ app.get("saveNotification", (req, res, next) => {
 
 app.get("/validate", (req, res, next) => {
 
-  console.log(`Library Validation Requested.`);
+  logger.log('debug', 'logic.js', 'GET /validate', `Library Validation Requested.`);
   var validation = require('./worker/validation_worker.js');
   validation.validate(jsonMedia.getMedia(), notification, media, jsonMedia)
     .then(result => {
