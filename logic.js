@@ -9,6 +9,9 @@ const { test_env, test2 } = require('./modules/env_config.js');
 console.log(test_env);
 console.log(test2);
 
+var logger = require('./modules/logger.js');
+logger.log('critical', 'logic.js', 'Global', 'test');
+
 // Personal Worker Import
 var getDurationInMilliseconds = require('./worker/getDurationInMilliseconds.js');
 var notification = require('./worker/notification_worker.js');

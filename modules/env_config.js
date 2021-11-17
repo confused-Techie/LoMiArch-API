@@ -10,6 +10,7 @@ if (dotenv.error) {
 }
 
 module.exports = {
+  log_severity: process.env.LOG_SEVERITY,
   test_env: process.env.TEST_ENV,
   test2: 'Hello World'
 };
