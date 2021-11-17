@@ -11,10 +11,10 @@ module.exports.read_file = function( datapath, friendlyName ) {
 
       if (rawdata != '') {
         let jsondata = JSON.parse(rawdata);
-        logTime(start, friendlyName, 'Import');
+        logTime(start, friendlyName, 'Read', 'read_file');
         resolve(jsondata);
       } else {
-        logTime(start, friendlyName, 'Import');
+        logTime(start, friendlyName, 'Read', 'read_file');
         resolve('nodata');
       }
     } catch(ex) {
@@ -36,7 +36,7 @@ module.exports.write_file = function( datapath, datatowrite, friendlyName ) {
         if (err) {
           reject(err);
         } else {
-          logTime(start, friendlyName, 'Write');
+          logTime(start, friendlyName, 'Write', 'write_file');
           resolve('SUCCESS');
         }
       });
@@ -58,7 +58,7 @@ module.exports.delete_file = function( datapath, friendlyName ) {
         if (err) {
           reject(err);
         } else {
-          logTime(start, friendlyName, 'Remove');
+          logTime(start, friendlyName, 'Remove', 'delete_file');
           resolve('SUCCESS');
         }
       });
@@ -77,7 +77,7 @@ module.exports.copy_file = function(origPath, newPath, friendlyName ) {
     try {
       fs.copyFile(origPath, newPath)
         .then(res => {
-          logTime(start, friendlyName, 'Copy');
+          logTime(start, friendlyName, 'Copy', 'copy_file');
           resolve('SUCCESS');
         })
         .catch(err => {
@@ -89,8 +89,9 @@ module.exports.copy_file = function(origPath, newPath, friendlyName ) {
   });
 }
 
-function logTime(start, friendlyName, action) {
+function logTime(start, friendlyName, action, func) {
+  var logger = require('./logger.js');
   var getDurationInMilliseconds = require('../worker/getDurationInMilliseconds.js');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
-  console.log(`[FINISHED:file_handler] ${friendlyName} ${action}: ${durationInMilliseconds} ms`);
+  logger.log('debug', 'file_handler.js', `${func}`, `${friendlyName} ${action}: ${durationInMilliseconds} ms`);
 }

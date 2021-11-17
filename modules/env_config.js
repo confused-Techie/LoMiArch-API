@@ -1,3 +1,5 @@
+// This console.log can easily use logger but I'm unsure if it would create an uneeded import, and keep an additional instance of logger in memory
+// Will have to do testing to see if this causes any noticable changes in performance before changing 
 console.log('Loading Environment Variables...');
 
 const path = require('path');

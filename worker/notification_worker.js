@@ -32,7 +32,7 @@ module.exports.getNotification = function(id) {
 
           notificationdb.forEach((data, index) => {
             if (id == notificationdb[index].uuid) {
-              logTime(start, 'Notification', 'Retrival');
+              logTime(start, 'Notification', 'Retrival', 'getNotification', 'debug');
               resolve(notificationdb[index]);
             }
 
@@ -62,7 +62,7 @@ module.exports.deleteNotification = function(id) {
           notificationdb.forEach((data, index) => {
             if (id == notificationdb[index].uuid) {
               let removedItem = notificationdb.splice(index, 1);
-              logTime(start, 'Notification', 'Removal');
+              logTime(start, 'Notification', 'Removal', 'deleteNotification', 'info');
               console.log(removedItem);
               _this.saveNotification()
                 .then(res => {
@@ -108,7 +108,7 @@ module.exports.updateNotification = function() {
               console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
               _this.deleteNotification(notificationdb[index].uuid)
                 .then(res => {
-                  logTime(start, `Notification '${notificationdb[index].title}'`, 'Pruning');
+                  logTime(start, `Notification '${notificationdb[index].title}'`, 'Pruning', 'updateNotification', 'info');
                 })
                 .catch(err => {
                   reject(err);
@@ -119,7 +119,7 @@ module.exports.updateNotification = function() {
           }
 
           if (index == notificationdb.length -1) {
-            logTime(start, 'Notification DB', 'Pruning');
+            logTime(start, 'Notification DB', 'Pruning', 'updateNotification', 'info');
             _this.saveNotification()
               .then(res => {
                 resolve('SUCCESS');
@@ -166,7 +166,7 @@ module.exports.newNotification = function(title, message, priority) {
 
           notificationdb.unshift(temp_json);
           // Using unshift to ensure that the newest is first, since I'd rather not organize these later by birth time.
-          logTime(start, `Notification '${title}'`, 'Creation');
+          logTime(start, `Notification '${title}'`, 'Creation', 'newNotification', 'debug');
           _this.saveNotification()
             .then(res => {
               resolve('SUCCESS');
@@ -197,7 +197,7 @@ module.exports.saveNotification = function() {
 
         file_handler.write_file(path.join(__dirname, '../settings/notifications.json'), notificationdb, 'Notification DB')
           .then(res => {
-            logTime(start, 'Notification DB', 'Save');
+            logTime(start, 'Notification DB', 'Save', 'saveNotification', 'info');
             resolve('SUCCESS');
           })
           .catch(err => {
@@ -215,7 +215,9 @@ module.exports.saveNotification = function() {
 
 module.exports.initNotification = function() {
   return new Promise(function(resolve, reject) {
-    console.log('Beginning Saved Notifications Import...');
+    var logger = require('../modules/logger.js');
+
+    logger.log('notice', 'notification_worker', 'initNotification', 'Beginning Saved Notifications Import...');
 
     const start = process.hrtime();
 
@@ -226,30 +228,31 @@ module.exports.initNotification = function() {
       file_handler.read_file(path.join(__dirname, '../settings/notifications.json'), 'Notification DB')
         .then(res => {
           if (res == 'nodata') {
-            console.log('No saved Notifications to Import...');
-            logTime(start, 'Empty Notification DB', 'Import');
+            logger.log('debug', 'notification_worker', 'initNotification', 'No saved Notifications to Import...');
+            logTime(start, 'Empty Notification DB', 'Import', 'initNotification', 'info');
             notifyImport = true;
             resolve('SUCCESS');
           } else {
             notificationdb = res;
-            logTime(start, 'Notification DB', 'Import');
+            logTime(start, 'Notification DB', 'Import', 'initNotification', 'info');
             notifyImport = true;
             resolve('SUCCESS');
           }
         })
         .catch(err => {
-          reject(err);
+          reject(`initNotification => file_handler.read_file.catch: ${err}`);
         });
     } catch (err) {
-      reject(err);
+      reject(`initNotification => [246]catch: ${err}`);
     }
   });
 }
 
-function logTime(start, friendlyName, action) {
+function logTime(start, friendlyName, action, func, severity) {
+  var logger = require('../modules/logger.js');
   var getDurationInMilliseconds = require('./getDurationInMilliseconds');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
-  console.log(`[FINISHED:notification_worker] ${friendlyName} ${action}: ${durationInMilliseconds} ms`);
+  logger.log(`${severity}`, 'notification_worker', `${func}`, `${friendlyName} ${action}: ${durationInMilliseconds} ms`);
 }
 
 function uuidGenerate() {
