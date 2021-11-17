@@ -9,28 +9,29 @@ const { test_env, test2 } = require('./modules/env_config.js');
 console.log(test_env);
 console.log(test2);
 
-var logger = require('./modules/logger.js');
-logger.log('critical', 'logic.js', 'Global', 'test');
+//logger.log('critical', 'logic.js', 'Global', 'test');
 
 // Personal Worker Import
 var getDurationInMilliseconds = require('./worker/getDurationInMilliseconds.js');
+var logger = require('./modules/logger.js');
 var notification = require('./worker/notification_worker.js');
 var jsonMedia = require('./worker/jsonMedia_worker.js');
 var media = require('./worker/media_worker.js');
 
 // Import the actual Json Data and allow it to live within the jsonMedia dependency
-console.log('Attempting to Init the jsonMedia.importMedia()');
+logger.log('notice', 'logic.js', 'Global', 'Attempting to Init the jsonMedia.importMedia()');
+//console.log('Attempting to Init the jsonMedia.importMedia()');
 jsonMedia.importMedia()
   .then(res => {
 
     // Now to import the Notification Worker
-    console.log('Attempting to Init the notification.initNotification()');
+    logger.log('notice', 'logic.js', 'importMedia=>res', 'Attempting to Init the notification.initNotification()');
     notification.initNotification()
       .then(res => {
 
         // Now to start up the actual server, and declare handling of shutdown
 
-        console.log('Attempting to startup the Server');
+        logger.log('notice', 'logic.js', 'initNotification=>res', 'Attempting to startup the Server');
         const server = app.listen(5000, () => console.log('API Server running on port 5000...'));
 
         // Allow a graceful shutdown

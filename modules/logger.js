@@ -63,5 +63,5 @@ function getDateTime() {
 }
 
 function contentLogger(normSeverity, sourceFile, sourceFunc, msg) {
-  console.log(`${getDateTime()} [${sourceFile}:${sourceFunc}] ${msg}`);
+  console.log(`${getDateTime()} <${normSeverity}> [${sourceFile}:${sourceFunc}] ${msg}`);
 }
