@@ -41,7 +41,7 @@ module.exports.getAlbum = getAlbum;
 
 module.exports.importMedia = function() {
   return new Promise(function (resolve, reject) {
-    mediaJSON('import')
+    MediaJSONv2('import')
       .then(res => {
         tags.initTag()
           .then(res => {
@@ -454,9 +454,19 @@ function mediaJSON(mode) {
             totalItems = content.length;
           }
 
+          // Moving the declaration of resolveStatus before declaration of fileImportCheck, since when the media file is emtpy
+          // resolveStatus is called and failed as its not declared yet.
+          const resolveStatus = function() {
+            if (galDone && uuidDone) {
+              logTime(start, 'Total Import');
+              resolve('SUCCESS');
+            }
+          };
+
           const fileImportCheck = function() {
             //console.log('fileImportCheck');
             if (itemsProcessed == totalItems && totalItems != 0) {
+              console.log( `fileImportCheck() logTime`);
               logTime(start, 'Media Import');
 
               try {
@@ -662,19 +672,151 @@ function mediaJSON(mode) {
             }
           });
 
-
-
-          const resolveStatus = function() {
-            if (galDone && uuidDone) {
-              logTime(start, 'Total Import');
-              resolve('SUCCESS');
-            }
-          };
-
         }
       })
     } catch(ex) {
       reject(`Severe Error: ${ex}`);
+    }
+  });
+}
+
+function MediaJSONv2(mode) {
+  return new Promise(function (resolve, reject) {
+
+    // After the refactor moving certian features into other fucntions and API's within the album && tag workers, these code is unnecisaarily messy, and it may be best
+    // to move it into here to be as simple and fast as possible.
+    // Plus the bugs duplicated imports,
+
+    const start = process.hrtime();
+    var fs = require('fs');
+    var file_handler = require('../modules/file_handler.js');
+    var logger = require('../modules/logger.js');
+
+    if (mode == 'refresh') {
+      // Clearing the media value to allow a full refresh
+      media = '';
+    }
+
+    try {
+      // Declare the variables for use during the import
+
+      var itemsProcessed = 0;
+      var totalItems = 0;
+
+      // Instead of looping through again, if we temporarily assign the JOSN data to a var, then extract uuid and gallery from there, we ar
+      // no longer looping through all items twice on import
+      var uuidCollectionTemp = [];
+      var galCollectionTemp = [];
+
+      fs.readdir(jsonPath, {withFileTypes: true}, (err, content) => {
+        if (err) {
+          reject(`Error Occured Reading Import Media: ${err}`);
+        } else {
+
+          // Edge case to check if there are a total of zero items.
+          if (content.length == 0) {
+            // If there are zero items we can move straight to gallery checking then UUID, which we also know will be zero. But should have edge case built in.
+            // Since there is no data, we know we can't import any galleries or uuid's.
+            // All values are declared already, and we can resolve.
+            console.log(`No data within JSON Folder, nothing to import...`);
+            resolve('SUCCESS');
+          } else {
+            if (totalItems == 0) totalItems = content.length;
+            // After ensuring there are items to work with but totalItems hasn't been set yet
+          }
+
+          // This function can allow quickly checking if all files have been handled.
+          const fileImportCheck = function() {
+            if (itemsProcessed == totalItems) {
+              // This means all files have been done.
+
+              // do a quick check for if any media files were imported. Since the content.lenth = 0 doesn't account for .gitignore, tags, and albums that will be there
+              if (media.length == 0) {
+                logTime(start, 'No JSON Media Data to Import...');
+                resolve('SUCCESS');
+              } else {
+                logTime(start, 'All Media JSON has been Imported');
+                try {
+                  const startGal = process.hrtime();
+
+                  // now with knowing the import has looped through all items, and we have already successfully grabbed all uuid, and gals we can convert gal
+                  galCollectionTemp.forEach((galData, galIndex) => {
+                    // If one itme belongs to multiple galleries, we need to descend into that gallery and check each item
+                    if (galCollectionTemp[galIndex].length> 1) {
+                      galCollectionTemp[galIndex].forEach((galDataTwo, galIndexTwo) => {
+                        if (gallery.indexOf( galCollectionTemp[galIndex][galIndexTwo] ) == -1) {
+                          // since this item is not in the gallerydb, add it
+                          gallery.push( galCollectionTemp[galIndex][galIndexTwo] );
+                        }
+                      });
+                    } else {
+                      if (gallery.indexOf( galCollectionTemp[galIndex][0] ) == -1) {
+                        // since this item is not in the gallery, add it
+                        gallery.push( galCollectionTemp[galIndex][0] );
+                      }
+                    }
+                  });
+
+                  // At this point the galleries should be done being converted.
+                  logTime(startGal, 'Gallery Import Conversion');
+                  logTime(start, 'Total JSON Data Import');
+                  resolve('SUCCESS');
+                } catch(err) {
+                  reject(`Severe Error During fileImportCheck: ${err}`);
+                }
+              }
+
+            } // else the fileImportCHeck isn't ready to be run
+          };
+          // We want to check the contents of each file, knowing tags and albums have their own import now
+          content.forEach(file => {
+            if (file.isFile()) {
+              if (file.name == 'tags.json') {
+                // Should only be handled by tag worker. We will just add to total count to ignroe
+                itemsProcessed++;
+                fileImportCheck();
+              } else if (file.name == 'albums.json') {
+                itemsProcessed++;
+                fileImportCheck();
+              } else if (file.name == '.gitignore') {
+                itemsProcessed++;
+                fileImportCheck();
+              } else {
+                // Now here we can actuall import the JSON data
+                const jsonStart = process.hrtime();
+                try {
+
+                  file_handler.read_file(jsonPath+'/'+file.name, 'JSON Media File')
+                    .then(res => {
+                      // Assign any values needed within the JSON data
+                      uuidCollectionTemp.push(res.uuid);
+                      galCollectionTemp.push(res.gallery);
+                      media.push(res);
+                      itemsProcessed++;
+                      logTime(jsonStart, `Media JSON: ${file.name} Import`);
+                      fileImportCheck();
+                    })
+                    .catch(err => {
+                      reject(`Error Occured on JSON Data Import Read for ${file.name}; ${err}`);
+                    });
+                } catch(err) {
+                  // regular json failed to import
+                  reject(`ERROR Occured on JSON Data Import: ${err}`);
+                }
+              }
+            } else if (file.isDirectory()) {
+              // file is directory, which is not supported.
+              console.log(`Directories are not supported at the Root of the JSON Directory...`);
+            } else {
+              // unknown file,
+              console.log(`Unrecognized Content in the Root of the JSON Directory...`);
+            }
+          });
+        }
+      });
+
+    } catch(err) {
+      reject(`Severe Error: ${err}`);
     }
   });
 }
