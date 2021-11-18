@@ -11,8 +11,10 @@ if (dotenv.error) {
   throw dotenv.error;
 }
 
+// The value shown here is the default value supplied if no value is declared
+
 module.exports = {
-  log_severity: process.env.LOG_SEVERITY,
-  listen_port: process.env.PORT,
-  notify_expiry: process.env.NOTIFICATION_EXPIRATION
+  log_severity: process.env.LOG_SEVERITY ? process.env.LOG_SEVERITY : "debug",
+  listen_port: process.env.PORT ? process.env.PORT : 5000,
+  notify_expiry: process.env.NOTIFICATION_EXPIRATION ? process.env.NOTIFICATION_EXPIRATION : 6.048e8
 };

@@ -5,6 +5,8 @@
 var tagdb = [];
 var tagImport = false;
 
+var logger = require('../modules/logger.js');
+
 // ERROR DECLARATIONS
 var notImport = 'Tags have not been initialized';
 
@@ -56,7 +58,7 @@ module.exports.createTag = function(name, colour) {
 
           tagdb.unshift(tempTag);
           // Using unshift to avoid organizing, and can keep them newest to oldest
-          console.log(`Added ${tempTag[0]} to Tag Collection...`);
+          logger.log('info', 'tag_worker.js', 'createTag', `Added ${tempTag[0]} to Tag Collection...`);
           _this.saveTag()
             .then(res => {
               resolve('SUCCESS');
@@ -90,7 +92,7 @@ module.exports.addTag = function() {
 module.exports.initTag = function() {
   return new Promise(function (resolve, reject) {
     if (!tagImport) {
-      console.log('Beginning Saved Tag Import...');
+      logger.log('debug', 'tag_worker.js', 'initTag', 'Beginning Saved Tag Import...');
 
       const start = process.hrtime();
       const path = require('path');
@@ -100,13 +102,13 @@ module.exports.initTag = function() {
         file_handler.read_file(path.join(__dirname, '../json/tags.json'), 'Tag Collection')
           .then(res => {
             if (res == 'nodata') {
-              console.log('No saved Tags to Import...');
-              logTime(start, 'Empty Tag Collection Import');
+              logger.log('debug', 'tag_worker.js', 'initTag', 'No saved Tags to Import...');
+              logTime(start, 'Empty Tag Collection Import', 'initTag');
               tagImport = true;
               resolve('SUCCESS');
             } else {
               tagdb = res;
-              logTime(start, 'Tag Collection Import');
+              logTime(start, 'Tag Collection Import', 'initTag');
               tagImport = true;
               resolve('SUCCESS');
             }
@@ -138,7 +140,7 @@ module.exports.saveTag = function() {
     if (tagImport) {
       const start = process.hrtime();
 
-      console.log('Saving Tag Collection...');
+      logger.log('debug', 'tag_worker.js', 'saveTag', 'Saving Tag Collection...');
 
       try {
         const path = require('path');
@@ -147,7 +149,7 @@ module.exports.saveTag = function() {
 
         file_handler.write_file(path.join(__dirname, '../json/tags.json'), tagdb, 'Tag Collection')
           .then(res => {
-            logTime(start, 'Saving Tag Collection');
+            logTime(start, 'Saving Tag Collection', 'saveTag');
             resolve('SUCCESS');
           })
           .catch(err => {
@@ -162,8 +164,8 @@ module.exports.saveTag = function() {
   });
 }
 
-function logTime(start, phrase) {
+function logTime(start, phrase, func) {
   var getDurationInMilliseconds = require('./getDurationInMilliseconds');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
-  console.log(`[FINISHED] ${phrase}: ${durationInMilliseconds} ms`);
+  logger.log('debug', 'tag_worker.js', func, `[FINISHED] ${phrase}: ${durationInMilliseconds} ms`);
 }

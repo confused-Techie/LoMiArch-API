@@ -31,7 +31,7 @@ module.exports.createAlbum = function(albumName, albumPreview, albumCreator) {
           let tempJson = { uuid: albumUUID, name: albumName, preview: albumPreview, access: [ albumCreator ] };
           albumdb.push(tempJson);
 
-          console.log(`Created ${albumName}...`);
+          logThis('notice', 'createAlbum', `Created ${albumName}...`);
 
           _this.saveAlbums()
             .then(res => {
@@ -61,7 +61,7 @@ module.exports.deleteAlbum = function(albumUUID) {
       try {
         albumdb.forEach(function(item, index, array) {
           if (albumUUID == album[index].uuid) {
-            console.log(`Found Matching Album for Deletion: ${album[index].name}, ${album[index].uuid}...`);
+            logThis('notice', 'deleteAlbum', `Found Matching Album for Deletion: ${album[index].name}, ${album[index].uuid}...`);
             let removedAlbum = albumdb.splice(index, 1);
             _this.saveAlbums()
               .then(res => {
@@ -96,7 +96,7 @@ module.exports.saveAlbums = function() {
     if (albumImport) {
       const start = process.hrtime();
 
-      console.log('Saving Album Collection...');
+      logThis('debug', 'saveAlbums', 'Saving Album Collection...');
 
       try {
         const path = require('path');
@@ -105,7 +105,7 @@ module.exports.saveAlbums = function() {
 
         file_handler.write_file(path.join(__dirname, '../json/albums.json'), albumdb, 'Album Collection')
           .then(res => {
-            logTime(start, 'Saving Album Collection');
+            logTime(start, 'Saving Album Collection', 'saveAlbums');
             resolve('SUCCESS');
           })
           .catch(err => {
@@ -123,7 +123,7 @@ module.exports.saveAlbums = function() {
 module.exports.initAlbums = function() {
   return new Promise(function (resolve, reject) {
     if (!albumImport) {
-      console.log('Beginning Saved Album Import...');
+      logThis('debug', 'initAlbums', 'Beginning Saved Album Import...');
 
       const start = process.hrtime();
       const path = require('path');
@@ -134,14 +134,14 @@ module.exports.initAlbums = function() {
           .then(res => {
             if (res == 'nodata') {
               // The file was empty
-              console.log('No saved Albums to Import...');
-              logTime(start, 'Empty Album Collection Import');
+              logThis('debug', 'initAlbums', 'No saved Albums to Import...');
+              logTime(start, 'Empty Album Collection Import', 'initAlbums');
               albumImport = true;
               resolve('SUCCESS');
             } else {
               // The file was NOT empty
               albumdb = res;
-              logTime(start, 'Album Collection Import');
+              logTime(start, 'Album Collection Import', 'initAlbums');
               albumImport = true;
               resolve('SUCCESS');
             }
@@ -158,10 +158,10 @@ module.exports.initAlbums = function() {
   });
 }
 
-function logTime(start, phrase) {
+function logTime(start, phrase, func) {
   var getDurationInMilliseconds = require('./getDurationInMilliseconds');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
-  console.log(`[FINISHED] ${phrase}: ${durationInMilliseconds} ms`);
+  logThis('debug', func, `[FINISHED] ${phrase}: ${durationInMilliseconds} ms`);
 }
 
 function uuidGenerate() {
@@ -172,4 +172,11 @@ function uuidGenerate() {
   } catch(ex) {
     return `ERROR Occured: ${ex}`;
   }
+}
+
+function logThis(severity, func, msg) {
+  // Since most of these functions have console.log I can use a single import here to avoid importing globally, or per function basis.
+  // Plus avoid typing the file each time.
+  var logger = require('../modules/logger.js');
+  logger.log(severity, 'album_worker', func, msg);
 }

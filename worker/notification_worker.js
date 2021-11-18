@@ -59,11 +59,13 @@ module.exports.deleteNotification = function(id) {
         if (id != '') {
           const start = process.hrtime();
 
+          var logger = require('../modules/logger.js');
+
           notificationdb.forEach((data, index) => {
             if (id == notificationdb[index].uuid) {
               let removedItem = notificationdb.splice(index, 1);
               logTime(start, 'Notification', 'Removal', 'deleteNotification', 'info');
-              console.log(removedItem);
+              logger.log('debug', 'notification_worker.js', 'deleteNotification', removedItem);
               _this.saveNotification()
                 .then(res => {
                   resolve('SUCCESS');
@@ -94,6 +96,7 @@ module.exports.updateNotification = function() {
     // This will simly be a check for low priority notifications to clear properly.
 
     const { notify_expiry } = require('../modules/env_config.js');
+    var logger = require('../modules/logger.js');
 
     //var notifyExpiry = 6.048e8; // This defualt value is a full week.
 
@@ -107,7 +110,7 @@ module.exports.updateNotification = function() {
             let currentTime = Date.now();
             if (currentTime - notificationdb[index].birth > notify_expiry) {
               // If the difference between the current time and origin of the notifications are more than the expiry time
-              console.log(`Expired Low Priority Notification Found: ${notificationdb[index].title}`);
+              logger.log('notice', 'notification_worker.js', 'updateNotification', `Expired Low Priority Notification Found: ${notificationdb[index].title}`);
               _this.deleteNotification(notificationdb[index].uuid)
                 .then(res => {
                   logTime(start, `Notification '${notificationdb[index].title}'`, 'Pruning', 'updateNotification', 'info');
@@ -116,7 +119,7 @@ module.exports.updateNotification = function() {
                   reject(err);
                 });
             } else {
-              console.log('Notify Expiry has not been reached. Leaving Notifications as is...');
+              logger.log('notice', 'notification_worker.js', 'updateNotification', 'Notify Expiry has not been reached. Leaving Notifications as is...');
             }
           }
 
@@ -132,7 +135,7 @@ module.exports.updateNotification = function() {
           }
         });
       } else {
-        console.log('No saved Notifications to Update; Skipping...');
+        logger.log('debug', 'notification_worker.js', 'updateNotification', 'No saved Notifications to Update; Skipping...');
         resolve('SUCCESS');
       }
     } else {
@@ -191,7 +194,9 @@ module.exports.saveNotification = function() {
     if (notifyImport) {
       const start = process.hrtime();
 
-      console.log('Saving Notifications File...');
+      var logger = require('../modules/logger.js');
+
+      logger.log('debug', 'notification_worker.js', 'saveNotification', 'Saving Notifications File...');
 
       try {
         const path = require('path');

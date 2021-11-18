@@ -5,11 +5,13 @@ var path = require('path');
 var rootPath = path.join(__dirname, "../media");
 var writePath = path.join(__dirname, "../json");
 
+var logger = require('../modules/logger.js');
+
 module.exports.deleteMedia = function(filePath, reason, fileName) {
   // This should expect a reason, to then know if the file should be moved to
   // Purgatory or moved to the trash
   return new Promise(function (resolve, reject) {
-    console.log('Removal of Media Requested...');
+    logger.log('notice', 'media_worker.js', 'deleteMedia', 'Removal of Media Requested...');
 
     const start = process.hrtime();
 
@@ -33,7 +35,7 @@ module.exports.deleteMedia = function(filePath, reason, fileName) {
                 .then(res => {
                   if (res == 'SUCCESS') {
                     // The file has now been successfully deleted.
-                    logTime(start, `Moving ${fileName} to Purgatory`);
+                    logTime(start, `Moving ${fileName} to Purgatory`, 'deleteMedia');
                     resolve('SUCCESS');
                   } else {
                     reject(`Unknown Resolve on File Deletion: ${res}`);
@@ -59,7 +61,7 @@ module.exports.deleteMedia = function(filePath, reason, fileName) {
             file_handler.delete_file(filePath, fileName)
               .then(res => {
                 // Now with the file successfully deleted we can resolve.
-                logTime(start, `Moving ${fileName} to the Trash Folder`);
+                logTime(start, `Moving ${fileName} to the Trash Folder`, 'deleteMedia');
                 resolve('SUCCESS');
               })
               .catch(err => {
@@ -78,7 +80,7 @@ module.exports.deleteMedia = function(filePath, reason, fileName) {
 }
 
 module.exports.importMedia = function(media) {
-  console.log('Starting Scan...');
+  logger.log('debug', 'media_worker.js', 'importMedia', 'Starting Scan...');
 
   const start = process.hrtime();
 
@@ -92,7 +94,7 @@ module.exports.importMedia = function(media) {
   try {
     fs.readdir(rootPath, {withFileTypes: true}, (err, content) => {
       if (err) {
-        console.log(err);
+        logger.log('alert', 'media_worker.js', 'importMedia => library', err);
       } else {
         // Each top level Folder is its own library
         // Each second level folder is a new album
@@ -100,13 +102,13 @@ module.exports.importMedia = function(media) {
         content.forEach(file => {
           if (file.isDirectory()) {
             if (file.name != 'trash' && file.name != 'purgatory') {
-              console.log(`Beginning Check on Library: ${file.name}`);
+              logger.log('debug', 'media_worker.js', 'importMedia', `Beginning Check on Library: ${file.name}`);
 
               // Now to scan the next level down for the actual content of the library or Albums
 
               fs.readdir(rootPath+'/'+file.name, {withFileTypes: true}, (ex, libContent) => {
-                if (ex) {
-                  console.log(err);
+                if (err) {
+                  logger.log('alert', 'media_worker.js', 'importMedia => libraryContent', err);
                 } else {
                   libContent.forEach(libFile => {
                     if (libFile.isDirectory()) {
@@ -115,14 +117,14 @@ module.exports.importMedia = function(media) {
                     } else if (libFile.isFile()) {
                       handleMedia(fs, knownMedia, file.name, libFile.name)
                         .then(res => {
-                          console.log(res);
-                          logTime(start, `Scanning and Writing Media Item: ${libFile.name}`);
+                          logger.log('debug', 'media_worker.js', 'importMedia => libraryContent => file', res);
+                          logTime(start, `Scanning and Writing Media Item: ${libFile.name}`, 'importMedia');
                         })
                         .catch(err => {
-                          console.log(err);
+                          logger.log('alert', 'media_worker.js', 'importMedia => libraryContent => file', err);
                         });
                     } else {
-                      console.log(`Unrecognized Item in Library ${file.name}: ${libFile.name}`);
+                      logger.log('alert', 'media_worker.js', 'importMedia => libraryContent', `Unrecognized Item in Library ${file.name}: ${libFile.name}`);
                     }
                   });
                 }
@@ -131,16 +133,16 @@ module.exports.importMedia = function(media) {
           } else if (file.isFile()) {
             if (file.name != '.gitignore') {
               // Ensure the needed .gitignore does not trigger this warning
-              console.log(`Content is not supported in the Top Level Directory of Media, and will be ignored: ${file.name}`);
+              logger.log('alert', 'media_worker.js', 'importMedia => library', `Content is not supported in the Top Level Directory of Media, and will be ignored: ${file.name}`);
             }
           } else {
-            console.log(`Unrecognized Item in Top Level Directory of Media: ${file.name}`);
+            logger.log('alert', 'media_worker.js', 'importMedia', `Unrecognized Item in Top Level Directory of Media: ${file.name}`);
           }
         });
       }
     });
   } catch(err) {
-    console.log(err);
+    logger.log('alert', 'media_worker.js', 'importMedia', err);
   }
 }
 
@@ -148,7 +150,7 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
   return new Promise(function (resolve, reject) {
     var filePath = rootPath+'/'+libraryName+'/'+fileName;
     if (knownMedia.indexOf(filePath) == -1) {
-      console.log(`Content Found within ${libraryName}: ${fileName}`);
+      logger.log('debug', 'media_worker.js', 'handleMedia', `Content Found within ${libraryName}: ${fileName}`);
 
       // Now to gather metadata for this item and write the JSON files
 
@@ -181,7 +183,7 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
           // If the data has been grabbed successfully includes wont be a valid function on an object
           try {
             if (dimensionsData.includes('ERROR')) {
-              console.log(`ERROR in Dimencions Gathering: ${dimensionsData}`);
+              logger.log('warning', 'media_worker.js', 'handleMedia', `ERROR in Dimensions Gathering: ${dimensionsData}, declaring as empty`);
               // Declare empty values to avoid errors, and assume good data going forward
               dimensionsData = undefined;
               dimensionsData.height = '';
@@ -193,14 +195,14 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
               // Object ought to be. We can ignore these errors
             } else {
               // Otherwise may be a valid error and should be logged. Returning values to empty
-              console.log(`Error in checking for Dimensions Error: ${errD}`);
+              logger.log('warning', 'media_worker.js', 'handleMedia', `Error in checking for Dimensions Error: ${errD}`);
               dimensionsData = undefined;
               dimensionsData.height = '';
               dimensionsData.width = '';
             }
           }
         } catch(errD) {
-          console.log(`Severe Soft Error in Collecting Dimensions Data: ${errD}`);
+          logger.log('warning', 'media_worker.js', 'handleMedia', `Severe Soft Error in Collecting Dimensions Data: ${errD}`);
           // Declare values empty to avoid errors and assume good data moving forward
           dimensionsData = undefined;
           dimensionsData.height = '';
@@ -214,12 +216,12 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
 
           // since the proper return is a string this can be checked without a try catch
           if (md5Hash.includes('ERROR')) {
-            console.log(`ERROR in Generating md5Hash: ${md5Hash}`);
+            logger.log('warning', 'media_worker.js', 'handleMedia', `ERROR in Generating md5Hash: ${md5Hash}`);
             // Since there is no safe way known to recover, exit.
             reject(`ERROR Occured while generating strict hash: ${md5Hash}`);
           } // Else we can assume valid data
         } catch(errH) {
-          console.log(`md5Hash Error: ${errH}`);
+          logger.log('warning', 'media_worker.js', 'handleMedia', `md5Hash Error: ${errH}`);
           // Since again we should assume the md5Hash data is invalid we need to exit
           reject(`md5Hash Generic Error: ${errH}`);
         }
@@ -229,12 +231,12 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
           uuidValud = uuidGenerate();
 
           if (uuidValue.includes('ERROR')) {
-            console.log(`ERROR in Generating UUID: ${uuidValue}`);
+            logger.log('warning', 'media_worker.js', 'handleMedia', `ERROR in Generating UUID: ${uuidValue}`);
             // Again no safe way to recover
             reject(`ERROR in Generating UUID: ${uuidValue}`);
           } // Else assume valid data
         } catch(errU) {
-          console.log(`uuidValue Generic Error: ${errU}`);
+          logger.log('warning', 'media_worker.js', 'handleMedia', `uuidValue Generic Error: ${errU}`);
           reject(`uuidValue Generic Error: ${errU}`);
         }
 
@@ -246,7 +248,7 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
           // If successful includes is not a valid function
           try {
             if (exifData.includes('ERROR')) {
-              console.log(`ERROR in Exif Collection: ${exifData}`);
+              logger.log('warning', 'media_worker.js', 'handleMedia', `ERROR in Exif Collection: ${exifData}`);
               exifData = '';  // Set to default to avoid errors
             } // else assume validity
           } catch(err) {
@@ -255,12 +257,12 @@ function handleMedia(fs, knownMedia, libraryName, fileName) {
               // ignore
             } else {
               // Valid error and should be logged
-              console.log(`ERROR in Exif Collection: ${err}`);
+              logger.log('warning', 'media_worker.js', 'handleMedia', `ERROR in Exif Collection: ${err}`);
               exifData = '';
             }
           }
         } catch(errE) {
-          console.log(`Generic Error in Collecting Exif Data: ${errE}`);
+          logger.log('warning', 'media_worker.js', 'handleMedia', `Generic Error in Collecting Exif Data: ${errE}`);
           exifData = '';
         }
 
@@ -456,12 +458,12 @@ function fileStats(fsImport, filePath, exifData) {
 
         // NULL CHECK
         if (isNaN(tempEpochTime)) {
-          console.log('epochTime'+temp_epochTime);
-          console.log('birthtime'+fsBirthTime);
-          console.log('datetime'+exifDateTime);
-          console.log('datetimeoriginal'+exifDateTimeOriginal);
-          console.log('datetimedigitzed'+exifDateTimeDigitized);
-          console.log('currentdate'+currentDate);
+          logger.log('warning', 'media_worker.js', 'fileStats', 'epochTime'+temp_epochTime);
+          logger.log('warning', 'media_worker.js', 'fileStats', 'birthtime'+fsBirthTime);
+          logger.log('warning', 'media_worker.js', 'fileStats', 'datetime'+exifDateTime);
+          logger.log('warning', 'media_worker.js', 'fileStats', 'datetimeoriginal'+exifDateTimeOriginal);
+          logger.log('warning', 'media_worker.js', 'fileStats', 'datetimedigitzed'+exifDateTimeDigitized);
+          logger.log('warning', 'media_worker.js', 'fileStats', 'currentdate'+currentDate);
         }
 
         resolve( { byteSize: temp_byteSize, friendlySize: temp_friendlySize, epochTime: temp_epochTime } );
@@ -472,8 +474,8 @@ function fileStats(fsImport, filePath, exifData) {
   });
 }
 
-function logTime(start, phrase) {
+function logTime(start, phrase, func) {
   var getDurationInMilliseconds = require('./getDurationInMilliseconds');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
-  console.log(`[FINISHED:media_worker] ${phrase}: ${durationInMilliseconds} ms`);
+  logger.log('debug', 'media_worker.js', func, `[FINISHED:media_worker] ${phrase}: ${durationInMilliseconds} ms`);
 }
