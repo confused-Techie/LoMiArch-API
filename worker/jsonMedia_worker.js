@@ -425,7 +425,7 @@ module.exports.mediaCollection = function(type, currentPage) {
   });
 }
 
-function mediaJSON(mode) {
+function mediaJSON(mode) {  // If setting the import back to this rememebr to change the logTime to func method 
   return new Promise(function (resolve, reject) {
     const start = process.hrtime();
     var fs = require('fs');
@@ -718,7 +718,7 @@ function MediaJSONv2(mode) {
             // If there are zero items we can move straight to gallery checking then UUID, which we also know will be zero. But should have edge case built in.
             // Since there is no data, we know we can't import any galleries or uuid's.
             // All values are declared already, and we can resolve.
-            console.log(`No data within JSON Folder, nothing to import...`);
+            logger.log('notice', 'jsonMedia_worker.js', 'MediaJSONv2', `No data within JSON Folder, nothing to import...`);
             resolve('SUCCESS');
           } else {
             if (totalItems == 0) totalItems = content.length;
@@ -732,10 +732,10 @@ function MediaJSONv2(mode) {
 
               // do a quick check for if any media files were imported. Since the content.lenth = 0 doesn't account for .gitignore, tags, and albums that will be there
               if (media.length == 0) {
-                logTime(start, 'No JSON Media Data to Import...');
+                logTime(start, 'No JSON Media Data to Import...', 'MediaJSONv2');
                 resolve('SUCCESS');
               } else {
-                logTime(start, 'All Media JSON has been Imported');
+                logTime(start, 'All Media JSON has been Imported', 'MediaJSONv2');
                 try {
                   const startGal = process.hrtime();
 
@@ -758,8 +758,8 @@ function MediaJSONv2(mode) {
                   });
 
                   // At this point the galleries should be done being converted.
-                  logTime(startGal, 'Gallery Import Conversion');
-                  logTime(start, 'Total JSON Data Import');
+                  logTime(startGal, 'Gallery Import Conversion', 'MediaJSONv2');
+                  logTime(start, 'Total JSON Data Import', 'MediaJSONv2');
                   resolve('SUCCESS');
                 } catch(err) {
                   reject(`Severe Error During fileImportCheck: ${err}`);
@@ -793,7 +793,7 @@ function MediaJSONv2(mode) {
                       galCollectionTemp.push(res.gallery);
                       media.push(res);
                       itemsProcessed++;
-                      logTime(jsonStart, `Media JSON: ${file.name} Import`);
+                      logTime(jsonStart, `Media JSON: ${file.name} Import`, 'MediaJSONv2');
                       fileImportCheck();
                     })
                     .catch(err => {
@@ -806,10 +806,10 @@ function MediaJSONv2(mode) {
               }
             } else if (file.isDirectory()) {
               // file is directory, which is not supported.
-              console.log(`Directories are not supported at the Root of the JSON Directory...`);
+              logger.log('warning', 'jsonMedia_worker.js', 'MediaJSONv2', `Directories are not supported at the Root of the JSON Directory...`);
             } else {
               // unknown file,
-              console.log(`Unrecognized Content in the Root of the JSON Directory...`);
+              logger.log('warning', 'jsonMedia_worker.js', 'MediaJSONv2', `Unrecognized Content in the Root of the JSON Directory...`);
             }
           });
         }
@@ -821,8 +821,9 @@ function MediaJSONv2(mode) {
   });
 }
 
-function logTime(start, phrase) {
+function logTime(start, phrase, func) {
   var getDurationInMilliseconds = require('./getDurationInMilliseconds');
+  var logger = require('../modules/logger.js');
   const durationInMilliseconds = getDurationInMilliseconds.getDurationInMilliseconds(start);
-  console.log(`[FINISHED:jsonMedia_worker] ${phrase}: ${durationInMilliseconds} ms`);
+  logger.log('debug', 'jsonMedia_worker.js', func, `${phrase}: ${durationInMilliseconds} ms`);
 }
