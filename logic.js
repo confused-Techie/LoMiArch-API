@@ -243,6 +243,19 @@ app.get("/editAlbum", (req, res, next) => {
   return error(req, res, 500, 'Not Currently Implemented');
 });
 
+app.get("/addToAlbum", (req, res, next) => {
+  var mediaToAdd = req.params.mediaUUID;
+  var albumToAdd = req.params.albumUUID;
+
+  jsonMedia.contentAddAlbum(mediaToAdd, albumToAdd)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
+});
+
 // MEDIA API ENDPOINTS ----------------------------------
 
 app.get("/details/:uuid?", (req, res, next) => {

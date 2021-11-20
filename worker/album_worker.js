@@ -91,6 +91,26 @@ module.exports.getAlbums = function() {
   });
 }
 
+module.exports.validateAlbum = function(albumUUID) {
+  // Will return the index of the album or -1 if it doesn't exist. 
+  return new Promise(function (resolve, reject) {
+    if (albumImport) {
+      albumdb.forEach((element, index) => {
+        if (albumUUID == albumdb[index].uuid) {
+          // with the matching index, this can just return the correct index location
+          resolve(index);
+        } else {
+          if (index -1 = albumdb.length) {
+            reject(-1);
+          }
+        }
+      });
+    } else {
+      reject(notImportERROR);
+    }
+  });
+}
+
 module.exports.saveAlbums = function() {
   return new Promise(function (resolve, reject) {
     if (albumImport) {

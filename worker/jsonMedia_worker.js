@@ -110,6 +110,7 @@ module.exports.addTag = function(uuidVar, tagToAdd) {
       if (!~uuid.indexOf(uuidVar)) reject('Invalid UUID Value');
 
       // TODO: Add check to ensure tag already exists
+
       media.forEach(function(item, index, array) {
         if (media[index].uuid == uuidVar) {
           media[index].tag.push(tagToAdd);
@@ -202,6 +203,35 @@ module.exports.saveAlbums = function() {
 module.exports.editAlbum = function() {
   // not implemented yet
   reject('This feature is not currently implemented.');
+
+}
+
+module.exports.contentAddAlbum = function(mediaUUID, albumUUID) {
+  return new Promise(function (resolve, reject) {
+    const indexToReplace = media.findIndex(findItem => findItem.uuid === mediaItem.uuid);
+
+    if (album.validateAlbum(albumUUID) == -1) {
+      reject(`Album UUID is invalid: ${albumUUID}`);
+    } // else the id is valid and this can continue
+
+    if (indexToReplace != -1) {
+      var tempJSON = media[indexToReplace];
+
+      tempJSON.album.push(albumUUID);
+      // the above adds the new album uuid to the array of the extracted object.
+      // sending to modifyMedia will then enter this into the file itself and the active db
+      _this.modifyMedia(tempJSON, indexToReplace)
+        // modifyMedia doesn't require an index, but since we have it already we can provide it so it doesn't need to find it a second time. 
+        .then(res => {
+          resolve('SUCCESS');
+        })
+        .catch(err => {
+          reject(err);
+        });
+    } else {
+      reject(`Media UUID is invalid: ${mediaUUID}`);
+    }
+  });
 }
 
 // ------------------------- MEDIA FEATURES --------------------------------
@@ -224,6 +254,45 @@ module.exports.mediaDetails = function(uuidVar) {
       });
     } catch(err) {
       reject(err);
+    }
+  });
+}
+
+module.exports.modifyMedia = function(mediaItem, mediaProvidedIndex) {
+  // This will accept the object of the peice of media we want to modify.
+  // This is the newly modified object, and will work as long as the UUID has not changed.
+  // And will replace the original value of the item completly.
+  return new Promise(function (resolve, reject) {
+    if (mediaItem == '' || mediaItem == null ) reject('A Media Item needs to be provided');
+
+    const saveModifyMedia = function() {
+      var file_handler = require('../modules/file_handler.js');
+
+      file_handler.write_file(path.join(__dirname, `../json/${mediaItem.uuid}.json`), mediaItem, `Modifying Media: ${mediaItem.uuid}`)
+        .then(res => {
+          // with the file successfully written the in memroy db has already been updated
+          resolve('SUCCESS');
+        })
+        .catch(err => {
+          reject(err);
+        });
+    }
+
+    if (mediaProvidedIndex) {
+      // since the index has been provided we don't need to find it wasting time
+      media[mediaProvidedIndex] = mediaItem;
+      // Now with the in memory db updated, we just need to save the data.
+      // and we can call the previously delcared saveModifyMedia
+      saveModifyMedia();
+    } else {
+      // If the provided index wasn't provided we can calculate it ourselves, letting this have the most flexibiliyt
+      const indexToReplace = media.findIndex(findItem => findItem.uuid ==- mediaItem.uuid);
+      if (indexToReplace != -1) {
+        media[indexToReplace] = mediaItem;
+        saveModifyMedia();
+      } else {
+        reject(`Media UUID Invalid: ${mediaItem.uuid}`);
+      }
     }
   });
 }
@@ -425,7 +494,7 @@ module.exports.mediaCollection = function(type, currentPage) {
   });
 }
 
-function mediaJSON(mode) {  // If setting the import back to this rememebr to change the logTime to func method 
+function mediaJSON(mode) {  // If setting the import back to this rememebr to change the logTime to func method
   return new Promise(function (resolve, reject) {
     const start = process.hrtime();
     var fs = require('fs');
