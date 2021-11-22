@@ -50,8 +50,42 @@ module.exports.createAlbum = function(albumName, albumPreview, albumCreator) {
   });
 }
 
-module.exports.editAlbum = function() {
+module.exports.editAlbum = function(albumUUID, newName, newPreview, newAccess, albumIndex) {
   // This would strictly apply to editing the Album items, rather than editing what content is within it.
+  return new Promise(function (resolve, reject) {
+    // Its expected that the album UUID has been validated before this is called, since currently
+    // jsonMedia is the only possible caller, and should be providing the index
+    if (albumImport) {
+      // Now we can check whats been supplied to change within the designated album
+      // For this we can just check the truthiness of the value.
+
+      // Below to save my fingers, I can define a internal function to call the save feature
+      const internalSave = function() {
+        _this.saveAlbums()
+          .then(res => {
+            resolve('SUCCESS');
+          })
+          .catch(err => {
+            reject(err);
+          });
+      };
+
+      if (newName) {
+        albumdb[albumIndex].name = newName;
+        internalSave();
+      } else if (newPreview) {
+        albumdb[albumIndex].preview = newPreview;
+        internalSave();
+      } else if (newAccess) {
+        albumdb[albumIndex].access.push(newAccess);
+        internalSave();
+      } else {
+        reject('No supplied value to modify within album');
+      }
+    } else {
+      reject(notImportERROR);
+    }
+  });
 }
 
 module.exports.deleteAlbum = function(albumUUID) {
@@ -92,7 +126,7 @@ module.exports.getAlbums = function() {
 }
 
 module.exports.validateAlbum = function(albumUUID) {
-  // Will return the index of the album or -1 if it doesn't exist. 
+  // Will return the index of the album or -1 if it doesn't exist.
   return new Promise(function (resolve, reject) {
     if (albumImport) {
       albumdb.forEach((element, index) => {

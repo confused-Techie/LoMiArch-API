@@ -200,9 +200,31 @@ module.exports.saveAlbums = function() {
   });
 }
 
-module.exports.editAlbum = function() {
+module.exports.editAlbum = function(albumUUID, provName, provPreview, provAccess) {
   // not implemented yet
   reject('This feature is not currently implemented.');
+
+  return new Promise(function (resolve, reject) {
+    try {
+      // First we will use the album built in function to ensure we are not passing an invalid album
+      var albumIndex = album.validateAlbum(albumUUID);
+
+      if (albumIndex == -1) {
+        reject(`Album UUID is invalid: ${albumUUID}`);
+      } else {
+        album.editAlbum(albumUUID, provName, provPreview, provAccess, albumIndex)
+          .then(res => {
+            resolve(res);
+          })
+          .catch(err => {
+            reject(err);
+          });
+      }
+
+    } catch(err) {
+      reject(err);
+    }
+  });
 
 }
 
@@ -221,7 +243,7 @@ module.exports.contentAddAlbum = function(mediaUUID, albumUUID) {
       // the above adds the new album uuid to the array of the extracted object.
       // sending to modifyMedia will then enter this into the file itself and the active db
       _this.modifyMedia(tempJSON, indexToReplace)
-        // modifyMedia doesn't require an index, but since we have it already we can provide it so it doesn't need to find it a second time. 
+        // modifyMedia doesn't require an index, but since we have it already we can provide it so it doesn't need to find it a second time.
         .then(res => {
           resolve('SUCCESS');
         })
