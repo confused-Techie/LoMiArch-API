@@ -201,9 +201,6 @@ module.exports.saveAlbums = function() {
 }
 
 module.exports.editAlbum = function(albumUUID, provName, provPreview, provAccess) {
-  // not implemented yet
-  //reject('This feature is not currently implemented.');
-
   return new Promise(function (resolve, reject) {
     try {
       // First we will use the album built in function to ensure we are not passing an invalid album
@@ -829,6 +826,10 @@ function MediaJSONv2(mode) {
                 logTime(start, 'All Media JSON has been Imported', 'MediaJSONv2');
                 try {
                   const startGal = process.hrtime();
+
+                  // Turns out the uuidCollectionTemp was never pushed to the active db, we can assign it here since fileImportCheck
+                  // Should only be called once its complete
+                  uuid = uuidCollectionTemp;
 
                   // now with knowing the import has looped through all items, and we have already successfully grabbed all uuid, and gals we can convert gal
                   galCollectionTemp.forEach((galData, galIndex) => {
