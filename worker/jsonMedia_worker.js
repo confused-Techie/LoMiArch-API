@@ -202,7 +202,7 @@ module.exports.saveAlbums = function() {
 
 module.exports.editAlbum = function(albumUUID, provName, provPreview, provAccess) {
   // not implemented yet
-  reject('This feature is not currently implemented.');
+  //reject('This feature is not currently implemented.');
 
   return new Promise(function (resolve, reject) {
     try {

@@ -237,10 +237,20 @@ app.get("/saveAlbum", (req, res, next) => {
 });
 
 app.get("/editAlbum", (req, res, next) => {
+  var albumUUID = req.params.albumUUID ? req.params.albumUUID : false;
+  var albumName = req.params.newName ? req.params.newName : false;
+  var albumPreview = req.params.newPreview ? req.params.newPreview : false;
+  var albumAccess = req.params.newAccess ? req.params.newAccess : false;
+
   logger.log('debug', 'logic.js', 'GET /editAlbum', "Edit Album Requested");
 
-  logger.log('warning', 'logic.js', 'GET /editAlbum', 'This feature is not implemented yet.');
-  return error(req, res, 500, 'Not Currently Implemented');
+  jsonMedia.editAlbum(albumUUID, albumName, albumPreview, albumAccess)
+    .then(result => {
+      res.json(result);
+    })
+    .catch(err => {
+      return error(req, res, 500, err);
+    });
 });
 
 app.get("/addToAlbum", (req, res, next) => {

@@ -134,7 +134,7 @@ module.exports.validateAlbum = function(albumUUID) {
           // with the matching index, this can just return the correct index location
           resolve(index);
         } else {
-          if (index -1 = albumdb.length) {
+          if (index - 1 == albumdb.length) {
             reject(-1);
           }
         }
