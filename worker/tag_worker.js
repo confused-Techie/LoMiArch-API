@@ -47,6 +47,40 @@ module.exports.deleteTag = function(name) {
   });
 }
 
+module.exports.validateTag = function(nameToVal) {
+  return new Promise(function (resolve, reject) {
+    // This will return the index of a the tag or -1 if it doesn't exist.
+    console.log(`ValidateTag called with: ${nameToVal}`);
+    if (tagImport) {
+      try {
+        // check for edge case where the forEach never fails and the resolution hangs 
+        if (tagdb.length == 0) reject(`No Items imported into TagDB`);
+        // since the tag is a two dimensional array we can't use indoxof and will loop
+        // Much of this logic is borrowed from deleteTag
+        var tagIndex;
+        tagdb.forEach((item, index) => {
+          if (nameToVal == item[0]) {
+            tagIndex = index;
+          }
+
+          if (index -1 == tagdb.length) {
+            // to check once we are done looping
+            if (tagIndex == '' || tagIndex == null) {
+              reject(-1);
+            } else {
+              resolve(tagIndex);
+            }
+          }
+        });
+      } catch(err) {
+        reject(err);
+      }
+    } else {
+      reject(notImport);
+    }
+  });
+}
+
 module.exports.createTag = function(name, colour) {
   return new Promise(function (resolve, reject) {
     if (tagImport) {

@@ -107,18 +107,27 @@ module.exports.addTag = function(uuidVar, tagToAdd) {
   return new Promise(function (resolve, reject) {
     try {
       if (!uuidVar) reject('UUID Required for Adding Tag to Media');
-      if (!~uuid.indexOf(uuidVar)) reject('Invalid UUID Value');
+      if (!~uuid.indexOf(uuidVar)) reject(`Invalid UUID Value: ${uuidVar}`);
 
-      // TODO: Add check to ensure tag already exists
+      // We can check the required components of a tag here to ensure its there when we pass to the tag validator, since undefined doesn't error out.
+      if (!tagToAdd) reject(`Needed component for Tag missing: Name: ${tagToAdd.name}`);
 
-      media.forEach(function(item, index, array) {
-        if (media[index].uuid == uuidVar) {
-          media[index].tag.push(tagToAdd);
-        }
-        if (index == media.length -1) {
-          reject(`UUID ${uuidVar} Could not be found in Media DB`);
-        }
-      });
+      tags.validateTag(tagToAdd)
+        .then(res => {
+          console.log('validateTag res');
+          media.forEach(function(item, index, array) {
+            if (media[index].uuid == uuidVar) {
+              media[index].tag.push(tagToAdd);
+              resolve('SUCCESS');
+            }
+            if (index == media.length -1) {
+              reject(`UUID ${uuidVar} could not be found in Media DB`);
+            }
+          });
+        })
+        .catch(err => {
+          reject(err);
+        });
     } catch(err) {
       reject(err);
     }

@@ -154,8 +154,11 @@ app.get("/createTag", (req, res, next) => {
 });
 
 app.get("/addTag", (req, res, next) => {
-  var tagToAdd = req.params.tag;
-  var uuid = req.params.uuid;
+  var tagToAdd = req.query.tag;
+  var uuid = req.query.uuid;
+
+  console.log(`tagToAdd: ${tagToAdd}`);
+  console.log(`uuid: ${uuid}`);
 
   logger.log('debug', 'logic.js', 'GET /addTag', 'Adding Tag to Media Requested...');
 
