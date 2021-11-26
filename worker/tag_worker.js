@@ -50,25 +50,30 @@ module.exports.deleteTag = function(name) {
 module.exports.validateTag = function(nameToVal) {
   return new Promise(function (resolve, reject) {
     // This will return the index of a the tag or -1 if it doesn't exist.
-    console.log(`ValidateTag called with: ${nameToVal}`);
+    logger.log('dev', 'tag_worker', 'validateTag', `ValidateTag called with: ${nameToVal}`);
     if (tagImport) {
       try {
-        // check for edge case where the forEach never fails and the resolution hangs 
+        // check for edge case where the forEach never fails and the resolution hangs
         if (tagdb.length == 0) reject(`No Items imported into TagDB`);
         // since the tag is a two dimensional array we can't use indoxof and will loop
         // Much of this logic is borrowed from deleteTag
         var tagIndex;
         tagdb.forEach((item, index) => {
+          logger.log('dev', 'tag_worker', 'validateTag => tagdb.forEach', `Compare Tag: ${item[0]}; Provided Tag: ${nameToVal}`);
           if (nameToVal == item[0]) {
+            logger.log('dev', 'tag_worker', 'validateTag => tagdb.forEach', `Assigning tagIndex: ${index}`);
             tagIndex = index;
           }
 
-          if (index -1 == tagdb.length) {
+          if (index == tagdb.length - 1) {
             // to check once we are done looping
-            if (tagIndex == '' || tagIndex == null) {
-              reject(-1);
+            // while this originally checked against '' or null values we will just check truthiness
+            // since its still reporting reject when tagIndex is 0
+            if (tagIndex) {
+              resolve(tagIndex);
             } else {
               resolve(tagIndex);
+              reject(-1);
             }
           }
         });

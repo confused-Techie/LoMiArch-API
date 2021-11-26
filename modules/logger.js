@@ -4,7 +4,7 @@
 const { log_severity } = require('./env_config.js');
 
 // First we want to check the validity of the env value
-const log_values = [ "emergency", "alert", "critical", "error", "warning", "notice", "info", "debug" ];
+const log_values = [ "emergency", "alert", "critical", "error", "warning", "notice", "info", "debug", "dev" ];
 try {
   if (!log_values.includes(log_severity.toLowerCase())) {
     throw `Log Severity Value is invalid: ${log_severity}; Valid Values: ${log_values}`;
@@ -55,6 +55,7 @@ function convertLog(provided) {
   if (providLow == 'notice') return 5;
   if (providLow == 'info') return 6;
   if (providLow == 'debug') return 7;
+  if (providLow == 'dev') return 8;
 }
 
 function getDateTime() {

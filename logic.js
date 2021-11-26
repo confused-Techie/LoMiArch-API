@@ -139,8 +139,8 @@ app.delete("/deleteTag", (req, res, next) => {
 });
 
 app.get("/createTag", (req, res, next) => {
-  var tagName = req.params.tagName;
-  var tagColour = req.params.tagColour;
+  var tagName = req.query.tagName;
+  var tagColour = req.query.tagColour;
 
   logger.log('debug', 'logic.js', 'GET /createTag', "Tag Creation Requested...");
 
@@ -156,9 +156,6 @@ app.get("/createTag", (req, res, next) => {
 app.get("/addTag", (req, res, next) => {
   var tagToAdd = req.query.tag;
   var uuid = req.query.uuid;
-
-  console.log(`tagToAdd: ${tagToAdd}`);
-  console.log(`uuid: ${uuid}`);
 
   logger.log('debug', 'logic.js', 'GET /addTag', 'Adding Tag to Media Requested...');
 

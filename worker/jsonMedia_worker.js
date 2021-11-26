@@ -6,6 +6,9 @@ var jsonPath = path.join(__dirname, "../json");
 // New dependencies of jsonMedia_worker of other media types, to avoid redundant code
 var tags = require('./tag_worker.js');
 var album = require('./album_worker.js');
+var logger = require('../modules/logger.js');
+
+var _this = this;
 
 var media = [];
 var uuid = [];
@@ -112,21 +115,40 @@ module.exports.addTag = function(uuidVar, tagToAdd) {
       // We can check the required components of a tag here to ensure its there when we pass to the tag validator, since undefined doesn't error out.
       if (!tagToAdd) reject(`Needed component for Tag missing: Name: ${tagToAdd.name}`);
 
+      var matchFound = false;
+
       tags.validateTag(tagToAdd)
         .then(res => {
-          console.log('validateTag res');
           media.forEach(function(item, index, array) {
+            logger.log('dev', 'jsonMedia_worker', 'addTag => validateTag.res', `uuidVar: ${uuidVar}; media.uuid: ${media[index].uuid}`);
             if (media[index].uuid == uuidVar) {
+              logger.log('dev', 'jsonMedia_worker', 'addTag => validateTag.res', 'Media Matched for tag push');
               media[index].tag.push(tagToAdd);
-              resolve('SUCCESS');
+              matchFound = true;
+              _this.modifyMedia(media[index], index)
+                .then(res => {
+                  resolve('SUCCESS');
+                })
+                .catch(err => {
+                  reject(err);
+                });
+            } else {
+              if (index == media.length - 1 && !matchFound) {
+                reject(`UUID ${uuidVar} could not be found in Media DB`);
+                // Needed to add the match found, since modifyMedia took enough time for this to fully loop even when not checking on the matched loop
+              }
             }
-            if (index == media.length -1) {
-              reject(`UUID ${uuidVar} could not be found in Media DB`);
-            }
+            // Moved this into an else statement, since the file handling takes time and would reject while processing the file handler.
           });
         })
         .catch(err => {
-          reject(err);
+          if (err == -1) {
+            // Since this will fail with -1 if not found we will handle that to add verbosity to the error.
+            // otherwise this may be another error and we will provide that.
+            reject(`The specified Tag could not be found.`);
+          } else {
+            reject(err);
+          }
         });
     } catch(err) {
       reject(err);
@@ -291,6 +313,7 @@ module.exports.modifyMedia = function(mediaItem, mediaProvidedIndex) {
   // This is the newly modified object, and will work as long as the UUID has not changed.
   // And will replace the original value of the item completly.
   return new Promise(function (resolve, reject) {
+    console.log(`modifyMedia Called`);
     if (mediaItem == '' || mediaItem == null ) reject('A Media Item needs to be provided');
 
     const saveModifyMedia = function() {
