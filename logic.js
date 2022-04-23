@@ -127,7 +127,7 @@ app.get("/tags", (req, res, next) => {
 app.delete("/deleteTag", (req, res, next) => {
   logger.log('debug', 'logic.js', 'DELETE /deleteTag', "Delete Tag Requested...");
 
-  var tagName = req.params.tag;
+  var tagName = req.query.tag;
 
   jsonMedia.deleteTag(tagName)
     .then(result => {

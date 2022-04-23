@@ -16,28 +16,34 @@ module.exports.deleteTag = function(name) {
   return new Promise(function (resolve, reject) {
     if (tagImport) {
       try {
-
+        // turns out if no tag is specified it by default removes an item. We can easily add a check to ensure tag is specified
+        if (!name) reject(`Tag to Delete needs to be specified`);
         // Since the tag is a two dimensional array we can't use indexof and will loop
         var tagIndex;
         tagdb.forEach((item, index) => {
+          logger.log('dev', 'tag_worker', 'deleteTag', `Compare Tag: ${item[0]}; Provided Tag: ${name}`);
           if (name == item[0]) {
             tagIndex = index;
           }
+
+          if (tagIndex || tagIndex == 0) {
+            let removedItem = tagdb.splice(tagIndex, 1);
+            _this.saveTag()
+              .then(res => {
+                resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
+              })
+              .catch(err => {
+                reject(err);
+              });
+            //resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
+          } 
+          if (index == tagdb.length - 1) {
+            reject('Unable to find Tag within Tag DB');
+          }
+
         });
 
-        if (tagIndex != '') {
-          let removedItem = tagdb.splice(tagIndex, 1);
-          _this.saveTag()
-            .then(res => {
-              resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
-            })
-            .catch(err => {
-              reject(err);
-            });
-          //resolve(`Removed ${removedItem[0]} Successfully from Tag DB`);
-        } else {
-          reject('Unable to find Tag within Tag DB...');
-        }
+
       } catch(ex) {
         reject(ex);
       }
@@ -72,7 +78,6 @@ module.exports.validateTag = function(nameToVal) {
             if (tagIndex) {
               resolve(tagIndex);
             } else {
-              resolve(tagIndex);
               reject(-1);
             }
           }
